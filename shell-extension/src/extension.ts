@@ -14,7 +14,9 @@ export default class TrimmehExtension extends Extension {
         this.watcher = new ClipboardWatcher(trimmer, settings);
         this.watcher.enable();
 
-        this.panelIndicator = new PanelIndicator(settings, this.watcher);
+        this.panelIndicator = new PanelIndicator(settings, this.watcher, () => {
+            this.openPreferences();
+        });
         this.panelIndicator.addToPanel();
     }
 

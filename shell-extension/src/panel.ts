@@ -4,7 +4,6 @@ import St from 'gi://St';
 import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import * as ExtensionUtils from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import {ClipboardWatcher} from './clipboard.js';
 
 const PanelIndicatorClass = GObject.registerClass(
@@ -12,11 +11,13 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
     private settings!: Gio.Settings;
     private watcher!: ClipboardWatcher;
     private autoItem!: PopupMenu.PopupSwitchMenuItem;
+    private openPrefs?: () => void;
 
-    _init(settings: Gio.Settings, watcher: ClipboardWatcher) {
+    _init(settings: Gio.Settings, watcher: ClipboardWatcher, openPrefs?: () => void) {
         super._init(0.0, 'Trimmeh');
         this.settings = settings;
         this.watcher = watcher;
+        this.openPrefs = openPrefs;
 
         const icon = new St.Icon({ icon_name: 'edit-cut-symbolic', style_class: 'system-status-icon' });
         this.add_child(icon);
@@ -36,16 +37,10 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
 
         const prefsItem = new PopupMenu.PopupMenuItem('Preferences…');
         prefsItem.connect('activate', () => {
-            const ext = ExtensionUtils.getCurrentExtension();
-            if (!ext) {
-                log('Trimmeh: cannot open prefs (no current extension)');
-                return;
-            }
-            if (typeof ExtensionUtils.openPrefs === 'function') {
-                ExtensionUtils.openPrefs();
-            } else if (Main.extensionManager?.openExtensionPrefs) {
-                const version = ext.metadata?.version ?? 0;
-                Main.extensionManager.openExtensionPrefs(ext.uuid, '', version);
+            if (this.openPrefs) {
+                this.openPrefs();
+            } else {
+                log('Trimmeh: preferences callback not set');
             }
         });
 
