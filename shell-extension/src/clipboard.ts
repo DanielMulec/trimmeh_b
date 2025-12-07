@@ -7,7 +7,6 @@ import type {TrimOptions, Trimmer} from './wasm.js';
 export class ClipboardWatcher {
     private clipboard = St.Clipboard.get_default();
     private signals: number[] = [];
-    private lastHash = new Map<number, string>();
     private lastOriginal = new Map<number, string>();
     private pollId: number | null = null;
 
@@ -34,7 +33,6 @@ export class ClipboardWatcher {
     disable(): void {
         this.signals.forEach(sig => this.clipboard.disconnect(sig));
         this.signals = [];
-        this.lastHash.clear();
         if (this.pollId !== null) {
             GLib.source_remove(this.pollId);
             this.pollId = null;
@@ -57,12 +55,8 @@ export class ClipboardWatcher {
         if (!result.changed) {
             return;
         }
-        if (this.lastHash.get(selection) === result.hash_hex) {
-            return;
-        }
 
         this.lastOriginal.set(selection, text);
-        this.lastHash.set(selection, result.hash_hex);
         this.clipboard.set_text(selection, result.output);
     }
 
