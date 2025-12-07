@@ -10,14 +10,19 @@ const IndicatorClass = GObject.registerClass(
 class QuickSettingsIndicator extends SystemIndicator {
     private toggle!: QuickToggle;
     private restoreButton!: QuickMenuToggle;
+    private prefsButton!: QuickMenuToggle;
     private settingsChangedId: number | null = null;
-    private settings: Gio.Settings;
-    private watcher: ClipboardWatcher;
+    private settings!: Gio.Settings;
+    private watcher!: ClipboardWatcher;
+    private added = false;
 
-    constructor(settings: Gio.Settings, watcher: ClipboardWatcher) {
-        super();
+    _init(settings: Gio.Settings, watcher: ClipboardWatcher) {
+        super._init();
         this.settings = settings;
         this.watcher = watcher;
+
+        this._indicator = this._addIndicator();
+        this._indicator.icon_name = 'edit-cut-symbolic';
 
         this.toggle = new QuickToggle({
             label: 'Trimmeh',
@@ -25,7 +30,7 @@ class QuickSettingsIndicator extends SystemIndicator {
             iconName: 'edit-cut-symbolic',
             toggleMode: true,
         });
-        this.toggle.connect('toggled', () => {
+        this.toggle.connect('clicked', () => {
             this.settings.set_boolean('enable-auto-trim', this.toggle.checked);
         });
 
@@ -37,31 +42,34 @@ class QuickSettingsIndicator extends SystemIndicator {
             this.watcher.restore(St.ClipboardType.CLIPBOARD);
         });
 
-        const prefsButton = new QuickMenuToggle({
+        this.prefsButton = new QuickMenuToggle({
             label: 'Preferences…',
             iconName: 'emblem-system-symbolic',
         });
-        prefsButton.connect('clicked', () => {
+        this.prefsButton.connect('clicked', () => {
             ExtensionUtils.openPrefs();
         });
 
-        this._addItems([this.toggle, this.restoreButton, prefsButton]);
-        this.addIndicator();
+        this.quickSettingsItems = [this.toggle, this.restoreButton, this.prefsButton];
+        this._addItems(this.quickSettingsItems);
     }
 
-    enable(): void {
+    addToPanel(): void {
+        if (this.added)
+            return;
         Main.panel.statusArea.quickSettings.addExternalIndicator(this);
         this.settingsChangedId = this.settings.connect('changed::enable-auto-trim', () => {
             this.toggle.checked = this.settings.get_boolean('enable-auto-trim');
         });
+        this.added = true;
     }
 
-    disable(): void {
+    destroy(): void {
         if (this.settingsChangedId) {
             this.settings.disconnect(this.settingsChangedId);
             this.settingsChangedId = null;
         }
-        this.destroy();
+        super.destroy();
     }
 });
 

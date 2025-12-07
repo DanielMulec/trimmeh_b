@@ -17,10 +17,10 @@ export default class TrimmehExtension extends Extension {
         this.watcher.enable();
 
         this.indicator = new QuickSettingsIndicator(settings, this.watcher);
-        this.indicator.enable();
+        this.indicator.addToPanel();
 
         this.panelIndicator = new PanelIndicator(settings, this.watcher);
-        this.panelIndicator.enable();
+        this.panelIndicator.addToPanel();
     }
 
     disable(): void {

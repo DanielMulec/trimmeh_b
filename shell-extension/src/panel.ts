@@ -9,12 +9,12 @@ import {ClipboardWatcher} from './clipboard.js';
 
 const PanelIndicatorClass = GObject.registerClass(
 class TrimmehPanelIndicator extends PanelMenu.Button {
-    private settings: Gio.Settings;
-    private watcher: ClipboardWatcher;
-    private autoItem: PopupMenu.SwitchMenuItem;
+    private settings!: Gio.Settings;
+    private watcher!: ClipboardWatcher;
+    private autoItem!: PopupMenu.SwitchMenuItem;
 
-    constructor(settings: Gio.Settings, watcher: ClipboardWatcher) {
-        super(0.0, 'Trimmeh');
+    _init(settings: Gio.Settings, watcher: ClipboardWatcher) {
+        super._init(0.0, 'Trimmeh');
         this.settings = settings;
         this.watcher = watcher;
 
@@ -49,12 +49,12 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
         });
     }
 
-    enable(): void {
+    addToPanel(): void {
         Main.panel.addToStatusArea('trimmeh-panel', this);
     }
 
-    disable(): void {
-        this.destroy();
+    destroy(): void {
+        super.destroy();
     }
 });
 
