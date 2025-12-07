@@ -36,15 +36,16 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
 
         const prefsItem = new PopupMenu.PopupMenuItem('Preferences…');
         prefsItem.connect('activate', () => {
-            const uuid = ExtensionUtils.getCurrentExtension()?.uuid;
-            if (!uuid) {
-                log('Trimmeh: cannot open prefs (uuid unavailable)');
+            const ext = ExtensionUtils.getCurrentExtension();
+            if (!ext) {
+                log('Trimmeh: cannot open prefs (no current extension)');
                 return;
             }
             if (typeof ExtensionUtils.openPrefs === 'function') {
-                ExtensionUtils.openPrefs(uuid);
+                ExtensionUtils.openPrefs();
             } else if (Main.extensionManager?.openExtensionPrefs) {
-                Main.extensionManager.openExtensionPrefs(uuid, null, 0);
+                const version = ext.metadata?.version ?? 0;
+                Main.extensionManager.openExtensionPrefs(ext.uuid, '', version);
             }
         });
 
