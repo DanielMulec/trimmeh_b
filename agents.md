@@ -50,3 +50,4 @@ Use this as a lightweight RACI so we can parallelize the build. All agents work 
 ## Communication rules
 - Open short issues for cross-agent blockers; avoid large PRs.
 - If a change risks touching clipboard semantics or GNOME 48/49 compatibility, loop in Research + QA before merging.
+- Do not modify files outside the repository workspace (e.g., installed copies under `~/.local/share/gnome-shell/extensions/`); fix sources in-repo and provide installation steps instead.
