@@ -33,13 +33,20 @@ export async function createWasmTrimAdapter(basePath: string): Promise<Trimmer> 
         const wasmUri = GLib.filename_to_uri(wasmPath, null);
 
         const module: any = await import(glueUri);
-        const init = module.default ?? module.init;
-        if (typeof init !== 'function') {
-            throw new Error('wasm-bindgen glue missing init()');
-        }
-        await init(wasmUri);
-
+        const initSync = module.initSync ?? module.default?.initSync;
+        const initAsync = module.default ?? module.init;
         const trimFn = module.trim_js ?? module.trim;
+
+        const wasmBytes = readFileBytes(wasmUri);
+
+        if (typeof initSync === 'function') {
+            initSync({ module: wasmBytes });
+        } else if (typeof initAsync === 'function' && hasPromiseWasm()) {
+            await initAsync(wasmBytes);
+        } else {
+            throw new Error('No usable wasm init (initSync missing and async not supported)');
+        }
+
         if (typeof trimFn !== 'function') {
             throw new Error('wasm-bindgen glue missing trim_js()');
         }
@@ -83,6 +90,18 @@ function ensureFetchPolyfill() {
             arrayBuffer: async () => buf.buffer.slice(0),
         };
     };
+}
+
+function readFileBytes(uri: string): Uint8Array {
+    const file = Gio.File.new_for_uri(uri);
+    const [, contents] = file.load_contents(null);
+    return contents instanceof Uint8Array ? contents : Uint8Array.from(contents as unknown as number[]);
+}
+
+function hasPromiseWasm(): boolean {
+    return typeof WebAssembly !== 'undefined' &&
+        typeof (WebAssembly as any).instantiate === 'function' &&
+        typeof Promise !== 'undefined';
 }
 
 function aggressivenessToCode(level: Aggressiveness): number {

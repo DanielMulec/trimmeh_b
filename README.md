@@ -1,10 +1,10 @@
 # Trimmeh (GNOME 49+)
 
-Linux-first cousin of Trimmy that flattens multi-line shell snippets on the clipboard so they paste and run cleanly on GNOME 49 (Fedora 43 and later).
+Linux-first cousin of Trimmy (https://github.com/steipete/Trimmy) that flattens multi-line shell snippets on the clipboard so they paste and run cleanly on GNOME 49 (Fedora 43 and later).
 
 ## Why
 - Web tutorials and chats often ship shell commands split across lines, with prompts or box-drawing gutters. Pasting them into a terminal on Linux usually fails.
-- macOS users get Trimmy; GNOME/Wayland users do not, largely because clipboard snooping requires compositor-level privileges.
+- macOS users get Trimmy (https://github.com/steipete/Trimmy); GNOME/Wayland users do not, largely because clipboard snooping requires compositor-level privileges.
 - GNOME 49 is our minimum supported desktop. We intentionally do **not** target GNOME 47/46 or older; side-effect compatibility is fine but unsupported.
 
 ## Target platform
@@ -15,7 +15,7 @@ Linux-first cousin of Trimmy that flattens multi-line shell snippets on the clip
 ## User-facing feature set (MVP)
 - Auto-trim: watch the clipboard and rewrite multi-line shell commands into a single line, respecting `\` continuations.
 - Prompt cleanup: strip leading `$ ` or `# ` prompts when the line looks like a command; leave Markdown headings intact.
-- Aggressiveness levels: Low / Normal / High mirroring Trimmy.
+- Aggressiveness levels: Low / Normal / High mirroring Trimmy (https://github.com/steipete/Trimmy).
 - Toggles: keep blank lines, remove box-drawing gutters (`│┃`), enable/disable auto-trim.
 - Manual actions: “Trim current copy” and “Restore previous copy”.
 - Safety valves: skip blobs >10 lines; avoid loops by tagging our own writes (hash-based).

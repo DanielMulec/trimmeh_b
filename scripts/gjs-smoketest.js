@@ -15,14 +15,14 @@ async function main() {
     if (!ok) System.exit(1);
 
     const glueUri = GLib.filename_to_uri(gluePath, null);
-    const wasmUri = GLib.filename_to_uri(wasmPath, null);
+    const wasmBytes = readFileBytes(wasmPath);
     const mod = await import(glueUri);
-    const init = mod.default ?? mod.init;
-    if (typeof init !== 'function') {
-        print('glue missing init()');
+    const initSync = mod.initSync ?? mod.default?.initSync;
+    if (typeof initSync !== 'function') {
+        print('glue missing initSync()');
         System.exit(1);
     }
-    await init(wasmUri);
+    initSync({ module: wasmBytes });
     const trim = mod.trim_js ?? mod.trim;
     if (typeof trim !== 'function') {
         print('glue missing trim_js()');
@@ -50,6 +50,12 @@ function checkFile(path) {
         print(`cannot read ${path}: ${e}`);
         return false;
     }
+}
+
+function readFileBytes(path) {
+    const file = Gio.File.new_for_path(path);
+    const [, contents] = file.load_contents(null);
+    return contents instanceof Uint8Array ? contents : Uint8Array.from(contents);
 }
 
 function polyfillFetch() {

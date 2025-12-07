@@ -13,7 +13,7 @@ build-cli:
 
 # Build wasm artifacts (requires wasm32 target and wasm-bindgen-cli on PATH)
 build-wasm:
-	cargo build -p trimmeh-core --release --target wasm32-unknown-unknown
+	cargo build -p trimmeh-core --release --target wasm32-unknown-unknown --features wasm
 	wasm-bindgen --target web --no-typescript --out-dir shell-extension/wasm target/wasm32-unknown-unknown/release/trimmeh_core.wasm
 
 # Bundle the shell extension JS (requires esbuild)
