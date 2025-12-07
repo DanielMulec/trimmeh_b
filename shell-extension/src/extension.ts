@@ -1,5 +1,6 @@
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {QuickSettingsIndicator} from './indicator.js';
+import {PanelIndicator} from './panel.js';
 import * as ExtensionUtils from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import {ClipboardWatcher} from './clipboard.js';
 import {createWasmTrimAdapter} from './wasm.js';
@@ -7,6 +8,7 @@ import {createWasmTrimAdapter} from './wasm.js';
 export default class TrimmehExtension extends Extension {
     private watcher: ClipboardWatcher | null = null;
     private indicator: QuickSettingsIndicator | null = null;
+    private panelIndicator: PanelIndicator | null = null;
 
     async enable(): Promise<void> {
         const settings = this.getSettings();
@@ -16,6 +18,9 @@ export default class TrimmehExtension extends Extension {
 
         this.indicator = new QuickSettingsIndicator(settings, this.watcher);
         this.indicator.enable();
+
+        this.panelIndicator = new PanelIndicator(settings, this.watcher);
+        this.panelIndicator.enable();
     }
 
     disable(): void {
@@ -23,5 +28,7 @@ export default class TrimmehExtension extends Extension {
         this.watcher = null;
         this.indicator?.disable();
         this.indicator = null;
+        this.panelIndicator?.disable();
+        this.panelIndicator = null;
     }
 }

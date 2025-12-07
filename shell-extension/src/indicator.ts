@@ -1,16 +1,18 @@
 import St from 'gi://St';
-import * as Main from 'resource:///org/gnome/shell/ui/main.js';
-import {SystemIndicator, QuickToggle, QuickMenuToggle} from 'resource:///org/gnome/shell/ui/quickSettings.js';
-import * as ExtensionUtils from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import Gio from 'gi://Gio';
+import GObject from 'gi://GObject';
+import * as Main from 'resource:///org/gnome/shell/ui/main.js';
+import * as ExtensionUtils from 'resource:///org/gnome/shell/misc/extensionUtils.js';
+import {SystemIndicator, QuickToggle, QuickMenuToggle} from 'resource:///org/gnome/shell/ui/quickSettings.js';
 import {ClipboardWatcher} from './clipboard.js';
 
-export class QuickSettingsIndicator extends SystemIndicator {
-    private toggle: QuickToggle;
-    private restoreButton: QuickMenuToggle;
+const IndicatorClass = GObject.registerClass(
+class QuickSettingsIndicator extends SystemIndicator {
+    private toggle!: QuickToggle;
+    private restoreButton!: QuickMenuToggle;
+    private settingsChangedId: number | null = null;
     private settings: Gio.Settings;
     private watcher: ClipboardWatcher;
-    private settingsChangedId: number | null = null;
 
     constructor(settings: Gio.Settings, watcher: ClipboardWatcher) {
         super();
@@ -61,4 +63,6 @@ export class QuickSettingsIndicator extends SystemIndicator {
         }
         this.destroy();
     }
-}
+});
+
+export {IndicatorClass as QuickSettingsIndicator};
