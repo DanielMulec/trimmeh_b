@@ -5,6 +5,7 @@ import * as PanelMenu from 'resource:///org/gnome/shell/ui/panelMenu.js';
 import * as PopupMenu from 'resource:///org/gnome/shell/ui/popupMenu.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import * as ExtensionUtils from 'resource:///org/gnome/shell/misc/extensionUtils.js';
+import Me from 'resource:///org/gnome/shell/extensions/extension.js';
 import {ClipboardWatcher} from './clipboard.js';
 
 const PanelIndicatorClass = GObject.registerClass(
@@ -36,7 +37,11 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
 
         const prefsItem = new PopupMenu.PopupMenuItem('Preferences…');
         prefsItem.connect('activate', () => {
-            ExtensionUtils.openPrefs();
+            if (typeof ExtensionUtils.openPrefs === 'function') {
+                ExtensionUtils.openPrefs(Me.uuid);
+            } else if (Main.extensionManager?.openExtensionPrefs) {
+                Main.extensionManager.openExtensionPrefs(Me.uuid, null, 0);
+            }
         });
 
         this.menu.addMenuItem(this.autoItem);
