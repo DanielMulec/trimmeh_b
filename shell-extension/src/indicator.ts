@@ -50,8 +50,8 @@ class QuickSettingsIndicator extends SystemIndicator {
             ExtensionUtils.openPrefs();
         });
 
+        // GNOME Shell will read this array when we add the indicator.
         this.quickSettingsItems = [this.toggle, this.restoreButton, this.prefsButton];
-        this._addItems(this.quickSettingsItems);
     }
 
     addToPanel(): void {
