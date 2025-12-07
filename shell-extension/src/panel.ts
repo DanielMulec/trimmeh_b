@@ -29,19 +29,19 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
             this.settings.set_boolean('enable-auto-trim', state);
         });
 
-        const restoreItem = new PopupMenu.MenuItem('Restore last copy');
+        const restoreItem = new PopupMenu.PopupMenuItem('Restore last copy');
         restoreItem.connect('activate', () => {
             this.watcher.restore(St.ClipboardType.CLIPBOARD);
         });
 
-        const prefsItem = new PopupMenu.MenuItem('Preferences…');
+        const prefsItem = new PopupMenu.PopupMenuItem('Preferences…');
         prefsItem.connect('activate', () => {
             ExtensionUtils.openPrefs();
         });
 
         this.menu.addMenuItem(this.autoItem);
         this.menu.addMenuItem(restoreItem);
-        this.menu.addMenuItem(new PopupMenu.SeparatorMenuItem());
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this.menu.addMenuItem(prefsItem);
 
         this.settings.connect('changed::enable-auto-trim', () => {
