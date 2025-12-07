@@ -11,7 +11,7 @@ const PanelIndicatorClass = GObject.registerClass(
 class TrimmehPanelIndicator extends PanelMenu.Button {
     private settings!: Gio.Settings;
     private watcher!: ClipboardWatcher;
-    private autoItem!: PopupMenu.SwitchMenuItem;
+    private autoItem!: PopupMenu.PopupSwitchMenuItem;
 
     _init(settings: Gio.Settings, watcher: ClipboardWatcher) {
         super._init(0.0, 'Trimmeh');
@@ -21,7 +21,7 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
         const icon = new St.Icon({ icon_name: 'edit-cut-symbolic', style_class: 'system-status-icon' });
         this.add_child(icon);
 
-        this.autoItem = new PopupMenu.SwitchMenuItem(
+        this.autoItem = new PopupMenu.PopupSwitchMenuItem(
             'Auto trim clipboard',
             this.settings.get_boolean('enable-auto-trim'),
         );
