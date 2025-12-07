@@ -1,0 +1,14 @@
+target/
+node_modules/
+*.log
+.DS_Store
+.idea/
+.vscode/
+.rpmbuild/
+shell-extension/extension.js
+shell-extension/clipboard.js
+shell-extension/wasm.js
+shell-extension/prefs.js
+shell-extension/wasm/trimmeh_core.js
+shell-extension/wasm/trimmeh_core_bg.wasm
+shell-extension/schemas/gschemas.compiled

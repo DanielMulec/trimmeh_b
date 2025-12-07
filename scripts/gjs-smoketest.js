@@ -5,8 +5,35 @@ import Gio from 'gi://Gio';
 import System from 'system';
 
 const base = GLib.get_current_dir();
-const wasmPath = GLib.build_filenamev([base, 'shell-extension', 'wasm', 'libtrimmeh_core.wasm']);
+const wasmPath = GLib.build_filenamev([base, 'shell-extension', 'wasm', 'trimmeh_core_bg.wasm']);
 const gluePath = GLib.build_filenamev([base, 'shell-extension', 'wasm', 'trimmeh_core.js']);
+
+async function main() {
+    const ok = [wasmPath, gluePath].every(checkFile);
+    if (!ok) System.exit(1);
+
+    const glueUri = GLib.filename_to_uri(gluePath, null);
+    const wasmUri = GLib.filename_to_uri(wasmPath, null);
+    const mod = await import(glueUri);
+    const init = mod.default ?? mod.init;
+    if (typeof init !== 'function') {
+        print('glue missing init()');
+        System.exit(1);
+    }
+    await init(wasmUri);
+    const trim = mod.trim_js ?? mod.trim;
+    if (typeof trim !== 'function') {
+        print('glue missing trim_js()');
+        System.exit(1);
+    }
+    const res = trim('$ echo hi', 1, {
+        keep_blank_lines: false,
+        strip_box_chars: true,
+        trim_prompts: true,
+        max_lines: 10,
+    });
+    print(`trimmed: ${JSON.stringify(res)}`);
+}
 
 function checkFile(path) {
     if (!GLib.file_test(path, GLib.FileTest.EXISTS)) {
@@ -23,9 +50,7 @@ function checkFile(path) {
     }
 }
 
-const ok = checkFile(wasmPath) && checkFile(gluePath);
-if (!ok) {
+main().catch(e => {
+    print(`smoketest failed: ${e}`);
     System.exit(1);
-}
-
-print('wasm artifacts present; integrate wasm-bindgen loader next.');
+});

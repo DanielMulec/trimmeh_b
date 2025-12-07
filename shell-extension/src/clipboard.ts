@@ -1,20 +1,30 @@
 // Minimal clipboard watcher; real behavior completed after wasm pipeline is wired.
 import St from 'gi://St';
 import Gio from 'gi://Gio';
+import GLib from 'gi://GLib';
 import type {TrimOptions, Trimmer} from './wasm.js';
 
 export class ClipboardWatcher {
     private clipboard = St.Clipboard.get_default();
     private signals: number[] = [];
     private lastHash = new Map<number, string>();
+    private lastOriginal = new Map<number, string>();
+    private pollId: number | null = null;
 
     constructor(private trimmer: Trimmer, private settings: Gio.Settings) {}
 
     enable(): void {
-        const handler = (_clip: unknown, selection: number) => {
-            this.onOwnerChange(selection).catch(logError);
-        };
-        this.signals.push(this.clipboard.connect('owner-change', handler));
+        try {
+            const handler = (_clip: unknown, selection: number) => {
+                this.onOwnerChange(selection).catch(logError);
+            };
+            this.signals.push(this.clipboard.connect('owner-change', handler));
+        } catch (e) {
+            // St.Clipboard doesn't document owner-change; fall back to polling.
+            log(`owner-change not available, falling back to polling: ${e}`);
+            this.startPolling();
+        }
+
         // Prime both selections once.
         [St.ClipboardType.CLIPBOARD, St.ClipboardType.PRIMARY].forEach(sel => {
             this.onOwnerChange(sel).catch(logError);
@@ -25,6 +35,10 @@ export class ClipboardWatcher {
         this.signals.forEach(sig => this.clipboard.disconnect(sig));
         this.signals = [];
         this.lastHash.clear();
+        if (this.pollId !== null) {
+            GLib.source_remove(this.pollId);
+            this.pollId = null;
+        }
     }
 
     private async onOwnerChange(selection: number): Promise<void> {
@@ -47,8 +61,18 @@ export class ClipboardWatcher {
             return;
         }
 
+        this.lastOriginal.set(selection, text);
         this.lastHash.set(selection, result.hash_hex);
         this.clipboard.set_text(selection, result.output);
+    }
+
+    private startPolling(): void {
+        this.pollId = GLib.timeout_add(GLib.PRIORITY_DEFAULT, 800, () => {
+            [St.ClipboardType.CLIPBOARD, St.ClipboardType.PRIMARY].forEach(sel => {
+                this.onOwnerChange(sel).catch(logError);
+            });
+            return GLib.SOURCE_CONTINUE;
+        });
     }
 
     private readOptions(): TrimOptions {
@@ -66,5 +90,12 @@ export class ClipboardWatcher {
                 resolve(text);
             });
         });
+    }
+
+    restore(selection: number): void {
+        const original = this.lastOriginal.get(selection);
+        if (original) {
+            this.clipboard.set_text(selection, original);
+        }
     }
 }

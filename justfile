@@ -14,7 +14,7 @@ build-cli:
 # Build wasm artifacts (requires wasm32 target and wasm-bindgen-cli on PATH)
 build-wasm:
 	cargo build -p trimmeh-core --release --target wasm32-unknown-unknown
-	wasm-bindgen --target no-modules --out-dir shell-extension/wasm --weak-refs --reference-types target/wasm32-unknown-unknown/release/trimmeh_core.wasm
+	wasm-bindgen --target web --no-typescript --out-dir shell-extension/wasm target/wasm32-unknown-unknown/release/trimmeh_core.wasm
 
 # Bundle the shell extension JS (requires esbuild)
 bundle-extension:
@@ -22,7 +22,7 @@ bundle-extension:
 	npx esbuild shell-extension/src/clipboard.ts --bundle --format=esm --platform=browser --outfile=shell-extension/clipboard.js
 	npx esbuild shell-extension/src/wasm.ts --bundle --format=esm --platform=browser --outfile=shell-extension/wasm.js
 	npx esbuild shell-extension/src/prefs.ts --bundle --format=esm --platform=browser --outfile=shell-extension/prefs.js
-	cp shell-extension/metadata.json shell-extension/stylesheet.css shell-extension/wasm/libtrimmeh_core.wasm shell-extension/wasm/trimmeh_core.js shell-extension/ 2>/dev/null || true
+	cp shell-extension/metadata.json shell-extension/stylesheet.css shell-extension/wasm/trimmeh_core_bg.wasm shell-extension/wasm/trimmeh_core.js shell-extension/ 2>/dev/null || true
 	glib-compile-schemas shell-extension/schemas
 
 # Install extension locally (Wayland session)
