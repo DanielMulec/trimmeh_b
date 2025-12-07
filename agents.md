@@ -2,6 +2,10 @@
 
 Use this as a lightweight RACI so we can parallelize the build. All agents work against GNOME 49+ on Fedora 43; no GNOME 47/46 support work is allowed.
 
+## Validation & currency rules
+- Always validate any solution design against the official developer documentation first (GNOME, gjs, GTK, xdg-desktop-portal, Rust, etc.). If that is insufficient, run additional fresh web searches before implementation.
+- Keep the stack current as of December 7, 2025: Rust stable 1.91.0 (Edition 2024) or newer, GNOME 49 runtime (gjs/GTK from Fedora 43), latest `wasm-bindgen` compatible with that toolchain. Re-evaluate versions quarterly.
+
 ## 1) Research Agent
 - Tracks upstream changes in GNOME Shell, xdg-desktop-portal, and Fedora packaging that affect clipboard access.
 - Maintains a “compat matrix” note for GNOME 48/49, Wayland-only.
