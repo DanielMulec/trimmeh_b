@@ -26,6 +26,7 @@ const GLUE_FILE = 'shell-extension/wasm/trimmeh_core.js';
 
 export async function createWasmTrimAdapter(basePath: string): Promise<Trimmer> {
     try {
+        ensureFetchPolyfill();
         const gluePath = GLib.build_filenamev([basePath, 'wasm', 'trimmeh_core.js']);
         const wasmPath = GLib.build_filenamev([basePath, 'wasm', 'trimmeh_core_bg.wasm']);
         const glueUri = GLib.filename_to_uri(gluePath, null);
@@ -66,6 +67,22 @@ export async function createWasmTrimAdapter(basePath: string): Promise<Trimmer> 
             }),
         };
     }
+}
+
+function ensureFetchPolyfill() {
+    if (typeof (globalThis as any).fetch === 'function') {
+        return;
+    }
+    (globalThis as any).fetch = async (uri: string) => {
+        const file = Gio.File.new_for_uri(uri);
+        const [, contents] = file.load_contents(null);
+        const buf = contents instanceof Uint8Array ? contents : Uint8Array.from(contents as unknown as number[]);
+        return {
+            ok: true,
+            status: 200,
+            arrayBuffer: async () => buf.buffer.slice(0),
+        };
+    };
 }
 
 function aggressivenessToCode(level: Aggressiveness): number {

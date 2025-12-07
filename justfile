@@ -18,10 +18,10 @@ build-wasm:
 
 # Bundle the shell extension JS (requires esbuild)
 bundle-extension:
-	npx esbuild shell-extension/src/extension.ts --bundle --format=esm --platform=browser --outfile=shell-extension/extension.js
-	npx esbuild shell-extension/src/clipboard.ts --bundle --format=esm --platform=browser --outfile=shell-extension/clipboard.js
-	npx esbuild shell-extension/src/wasm.ts --bundle --format=esm --platform=browser --outfile=shell-extension/wasm.js
-	npx esbuild shell-extension/src/prefs.ts --bundle --format=esm --platform=browser --outfile=shell-extension/prefs.js
+	npx esbuild shell-extension/src/extension.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=shell-extension/extension.js
+	npx esbuild shell-extension/src/clipboard.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=shell-extension/clipboard.js
+	npx esbuild shell-extension/src/wasm.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=shell-extension/wasm.js
+	npx esbuild shell-extension/src/prefs.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=shell-extension/prefs.js
 	cp shell-extension/metadata.json shell-extension/stylesheet.css shell-extension/wasm/trimmeh_core_bg.wasm shell-extension/wasm/trimmeh_core.js shell-extension/ 2>/dev/null || true
 	glib-compile-schemas shell-extension/schemas
 

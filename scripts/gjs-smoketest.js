@@ -1,4 +1,4 @@
-#!/usr/bin/env gjs
+#!/usr/bin/env gjs -m
 // Minimal harness to sanity-check that wasm artifacts exist and are readable by gjs.
 import GLib from 'gi://GLib';
 import Gio from 'gi://Gio';
@@ -7,6 +7,8 @@ import System from 'system';
 const base = GLib.get_current_dir();
 const wasmPath = GLib.build_filenamev([base, 'shell-extension', 'wasm', 'trimmeh_core_bg.wasm']);
 const gluePath = GLib.build_filenamev([base, 'shell-extension', 'wasm', 'trimmeh_core.js']);
+
+polyfillFetch();
 
 async function main() {
     const ok = [wasmPath, gluePath].every(checkFile);
@@ -48,6 +50,20 @@ function checkFile(path) {
         print(`cannot read ${path}: ${e}`);
         return false;
     }
+}
+
+function polyfillFetch() {
+    if (typeof globalThis.fetch === 'function') return;
+    globalThis.fetch = async (uri) => {
+        const file = Gio.File.new_for_uri(uri);
+        const [, contents] = file.load_contents(null);
+        const buf = contents instanceof Uint8Array ? contents : Uint8Array.from(contents);
+        return {
+            ok: true,
+            status: 200,
+            arrayBuffer: async () => buf.buffer.slice(0),
+        };
+    };
 }
 
 main().catch(e => {
