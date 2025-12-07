@@ -1,4 +1,4 @@
-import Extension from 'resource:///org/gnome/shell/extensions/extension.js';
+import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {PanelIndicator} from './panel.js';
 import * as ExtensionUtils from 'resource:///org/gnome/shell/misc/extensionUtils.js';
 import {ClipboardWatcher} from './clipboard.js';
