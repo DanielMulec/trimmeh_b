@@ -1,0 +1,8 @@
+{
+  "uuid": "trimmeh@trimmeh.dev",
+  "name": "Trimmeh",
+  "description": "Auto-flattens shell snippets on the clipboard (GNOME 49+)",
+  "shell-version": ["49", "48"],
+  "settings-schema": "org.trimmeh",
+  "version": 1
+}

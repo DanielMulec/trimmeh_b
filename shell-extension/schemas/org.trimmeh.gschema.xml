@@ -1,0 +1,36 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<schemalist>
+  <schema id="org.trimmeh" path="/org/trimmeh/">
+    <key name="aggressiveness" type="s">
+      <default>'normal'</default>
+      <summary>Aggressiveness level</summary>
+      <description>One of: low, normal, high.</description>
+    </key>
+    <key name="keep-blank-lines" type="b">
+      <default>false</default>
+      <summary>Preserve blank lines</summary>
+      <description>If true, blank lines are kept before flattening.</description>
+    </key>
+    <key name="strip-box-chars" type="b">
+      <default>true</default>
+      <summary>Strip box drawing gutters</summary>
+      <description>Removes leading box drawing characters like │ when trimming.</description>
+    </key>
+    <key name="trim-prompts" type="b">
+      <default>true</default>
+      <summary>Strip shell prompts</summary>
+      <description>Removes leading prompt markers like $ or #.</description>
+    </key>
+    <key name="enable-auto-trim" type="b">
+      <default>true</default>
+      <summary>Automatically trim clipboard text</summary>
+      <description>When disabled, trimming only runs on demand from the UI.</description>
+    </key>
+    <key name="max-lines" type="i">
+      <default>10</default>
+      <summary>Maximum lines to process</summary>
+      <description>If the clipboard text exceeds this line count it is skipped.</description>
+      <range min="1" max="1000"/>
+    </key>
+  </schema>
+</schemalist>
