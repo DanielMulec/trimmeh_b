@@ -69,6 +69,8 @@ pub fn trim(input: &str, aggressiveness: Aggressiveness, opts: Options) -> TrimR
         };
     }
 
+    const BLANK_PLACEHOLDER: &str = "__TRIMMEH_BLANK__PLACEHOLDER__";
+
     let mut processed: Vec<String> = Vec::new();
     let mut did_prompt_strip = false;
     let mut did_box_strip = false;
@@ -91,17 +93,25 @@ pub fn trim(input: &str, aggressiveness: Aggressiveness, opts: Options) -> TrimR
             }
         }
 
-        if !opts.keep_blank_lines && current.trim().is_empty() {
+        if current.trim().is_empty() {
+            if opts.keep_blank_lines {
+                processed.push(BLANK_PLACEHOLDER.to_string());
+            }
             continue;
         }
 
         processed.push(current);
     }
 
-    let mut output = String::new();
+    let mut output_parts: Vec<String> = Vec::new();
     let mut did_backslash_merge = false;
 
     for line in processed.iter() {
+        if line == BLANK_PLACEHOLDER {
+            output_parts.push(BLANK_PLACEHOLDER.to_string());
+            continue;
+        }
+
         let mut current = line.trim_end().to_string();
         if current.ends_with('\\') {
             did_backslash_merge = true;
@@ -113,13 +123,15 @@ pub fn trim(input: &str, aggressiveness: Aggressiveness, opts: Options) -> TrimR
             }
         }
 
-        if !output.is_empty() {
-            output.push(' ');
-        }
-        output.push_str(&current);
+        output_parts.push(current);
     }
 
+    let mut output = output_parts.join(" ");
     output = collapse_operator_spacing(&output);
+
+    if opts.keep_blank_lines {
+        output = output.replace(BLANK_PLACEHOLDER, "\n\n");
+    }
 
     let changed = output != normalized_input;
     let reason = if !changed {
