@@ -8,6 +8,9 @@ export class ClipboardWatcher {
     private clipboard = St.Clipboard.get_default();
     private signals: number[] = [];
     private lastOriginal = new Map<number, string>();
+    // Marks a selection whose next owner-change was triggered by a manual restore,
+    // so we don't immediately retrim the original payload we just put back.
+    private restoring = new Set<number>();
     private pollId: number | null = null;
 
     constructor(private trimmer: Trimmer, private settings: Gio.Settings) {}
@@ -40,6 +43,11 @@ export class ClipboardWatcher {
     }
 
     private async onOwnerChange(selection: number): Promise<void> {
+        // If this owner-change was caused by a manual restore, skip trimming once.
+        if (this.restoring.has(selection)) {
+            this.restoring.delete(selection);
+            return;
+        }
         if (!this.settings.get_boolean('enable-auto-trim')) {
             return;
         }
@@ -89,6 +97,9 @@ export class ClipboardWatcher {
     restore(selection: number): void {
         const original = this.lastOriginal.get(selection);
         if (original) {
+            // Tag this selection so the next owner-change (triggered by set_text)
+            // doesn't immediately retrim the just-restored original.
+            this.restoring.add(selection);
             this.clipboard.set_text(selection, original);
         }
     }
