@@ -11,6 +11,9 @@ export class ClipboardWatcher {
     // Records the last write we performed per selection so we can skip
     // retrimming a manual restore while still trimming fresh copies.
     private lastWrite = new Map<number, {kind: 'restore' | 'trim', text: string}>();
+    // Guards to ensure a restored payload is not immediately re-trimmed even if
+    // GNOME emits multiple owner-change events or normalizes text.
+    private restoreGuards = new Map<number, {hash: string, expires: number}>();
     private pollId: number | null = null;
 
     constructor(private trimmer: Trimmer, private settings: Gio.Settings) {}
@@ -48,12 +51,27 @@ export class ClipboardWatcher {
             return;
         }
 
-        // If we just performed a manual restore and the content matches, skip retrimming once.
+        // If a restore just happened, skip until the clipboard changes away from
+        // the restored payload (or the guard expires).
+        const now = GLib.get_monotonic_time();
+        const guard = this.restoreGuards.get(selection);
+        if (guard) {
+            if (now > guard.expires) {
+                this.restoreGuards.delete(selection);
+            } else {
+                const hash = hashText(text);
+                if (hash === guard.hash) {
+                    log(`Trimmeh: skip owner-change after restore (selection=${selection})`);
+                    return;
+                }
+                // Text changed away from restored payload; drop guard and proceed.
+                this.restoreGuards.delete(selection);
+            }
+        }
+
+        // Legacy single-shot skip; kept as belt-and-suspenders.
         const last = this.lastWrite.get(selection);
         if (last?.kind === 'restore') {
-            // Skip exactly one change cycle after a manual restore, even if GNOME
-            // normalizes the text (e.g., newline handling). Prevents the restored
-            // payload from being immediately re-trimmed.
             this.lastWrite.delete(selection);
             return;
         }
@@ -104,8 +122,17 @@ export class ClipboardWatcher {
     restore(selection: number): void {
         const original = this.lastOriginal.get(selection);
         if (original) {
+            const hash = hashText(original);
+            const expires = GLib.get_monotonic_time() + 1_500_000; // ~1.5s
+            this.restoreGuards.set(selection, {hash, expires});
+            log(`Trimmeh: restore requested (selection=${selection}) hash=${hash}`);
             this.clipboard.set_text(selection, original);
             this.lastWrite.set(selection, {kind: 'restore', text: original});
         }
     }
+}
+
+function hashText(text: string): string {
+    // SHA256 provides stable hashing without extra deps.
+    return GLib.compute_checksum_for_string(GLib.ChecksumType.SHA256, text, -1);
 }
