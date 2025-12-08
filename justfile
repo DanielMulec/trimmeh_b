@@ -34,4 +34,18 @@ install-extension: build-wasm bundle-extension
 
 # RPM build (expects rpmbuild and fedora tree)
 rpm:
-	rpmbuild -ba packaging/fedora/trimmeh.spec --define "_sourcedir $(pwd)" --define "_topdir $(pwd)/.rpmbuild"
+	rm -rf .rpmbuild
+	mkdir -p .rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS,tmp}
+	tar czf gnome-shell-extension-trimmeh-0.1.0.tar.gz \
+		--exclude .git --exclude .rpmbuild --exclude target --exclude "**/node_modules" --exclude upstream \
+		--exclude gnome-shell-extension-trimmeh-0.1.0.tar.gz \
+		--transform 's,^,gnome-shell-extension-trimmeh-0.1.0/,' .
+	rpmbuild -ba packaging/fedora/trimmeh.spec \
+		--define "_sourcedir $(pwd)" \
+		--define "_topdir $(pwd)/.rpmbuild" \
+		--define "_tmppath $(pwd)/.rpmbuild/tmp" \
+		--define "__os_install_post %{nil}"
+
+# Build a zip suitable for extensions.gnome.org or manual install
+extension-zip: build-wasm bundle-extension
+	cd shell-extension && zip -r ../trimmeh-extension.zip . -x "node_modules/*"
