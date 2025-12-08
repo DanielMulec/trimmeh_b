@@ -10,7 +10,7 @@ Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires:  cargo
 BuildRequires:  rust
-# wasm-bindgen-cli may come from cargo install; leave soft guidance here
+BuildRequires:  /usr/bin/wasm-bindgen
 BuildRequires:  glib2-devel
 BuildRequires:  gobject-introspection
 BuildRequires:  gnome-shell

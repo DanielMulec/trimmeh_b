@@ -1,84 +1,63 @@
-# Trimmeh (GNOME 49+)
+# Trimmeh ✂️ (GNOME 49+)
 
-Linux-first cousin of Trimmy (https://github.com/steipete/Trimmy) that flattens multi-line shell snippets on the clipboard so they paste and run cleanly on GNOME 49 (Fedora 43 and later).
+Trimmeh is the South-Parkian cousin of [Trimmy](https://github.com/steipete/Trimmy) — same heuristics, now for GNOME/Wayland. It flattens multi-line shell snippets on your clipboard so they paste and run cleanly on GNOME 49 (Fedora 43+) without needing a background daemon.
 
-## Why
-- Web tutorials and chats often ship shell commands split across lines, with prompts or box-drawing gutters. Pasting them into a terminal on Linux usually fails.
-- macOS users get Trimmy (https://github.com/steipete/Trimmy); GNOME/Wayland users do not, largely because clipboard snooping requires compositor-level privileges.
-- GNOME 49 is our minimum supported desktop. We intentionally do **not** target GNOME 47/46 or older; side-effect compatibility is fine but unsupported.
+## What it does (parity with Trimmy)
+- Detects command-like multi-line snippets, joins lines (respects `\` continuations and wrapped tokens), strips prompts/box gutters, repairs wrapped URLs, and preserves blank lines when you ask.
+- Aggressiveness levels: Low / Normal / High (High is used by force/“Paste Trimmed” flows).
+- Toggles: Keep blank lines; Strip box gutters; Strip prompts; Enable auto-trim.
+- Manual: “Restore last copy” (one-shot), panel menu actions; CLI with `--force`, `--json`, preserve/keep flags.
+- Safety: skips blobs >10 lines by default; tags own writes to avoid loops.
 
-## Target platform
-- GNOME 49 on Fedora 43 (Wayland session). Should also work on GNOME 48; anything older is out-of-scope.
-- Shell extension sandbox: GNOME Shell 45+ JS runtime (gjs) with GTK 4.20 libs available for prefs UI.
-- PipeWire / xdg-desktop-portal >= 1.18 present by default on Fedora 43.
+## Platform & support stance
+- GNOME Shell 49 on Fedora 43 (Wayland). GNOME 48 should work; earlier is unsupported.
+- No X11. No telemetry. No network calls.
 
-## User-facing feature set (MVP)
-- Auto-trim: watch the clipboard and rewrite multi-line shell commands into a single line, respecting `\` continuations.
-- Prompt cleanup: strip leading `$ ` or `# ` prompts when the line looks like a command; leave Markdown headings intact.
-- Aggressiveness levels: Low / Normal / High mirroring Trimmy (https://github.com/steipete/Trimmy).
-- Toggles: keep blank lines, remove box-drawing gutters (`│┃`), enable/disable auto-trim.
-- Manual actions: “Trim current copy” and “Restore previous copy”.
-- Safety valves: skip blobs >10 lines; avoid loops by tagging our own writes (hash-based).
+## Install options
+- **Local dev install:** `just install-extension` (build wasm, bundle JS, compile schemas, install to `~/.local/share/gnome-shell/extensions/trimmeh@trimmeh.dev/`).
+- **Extension zip (for extensions.gnome.org or manual):** `just extension-zip` → `trimmeh-extension.zip`.
+- **RPM (Fedora 43+):** `just rpm` → `.rpmbuild/RPMS/noarch/gnome-shell-extension-trimmeh-<ver>.rpm`.
+- **CLI:** `cargo build -p trimmeh-cli --release` (optionally package as subpackage in RPM).
 
-## Non-goals (for now)
-- Full clipboard history manager.
-- Supporting X11.
-- Supporting GNOME 47/46 or earlier (explicitly out-of-scope).
-- Universal hotkey that pastes on your behalf without user consent (blocked by Wayland security; see Roadmap for optional portal-assisted flow).
+## Using it
+- Enable the extension (GNOME Extensions app or `gnome-extensions enable trimmeh@trimmeh.dev`).
+- Top-bar menu: Auto-trim toggle, Restore last copy (one-shot), Preferences.
+- Preferences (libadwaita): aggressiveness, keep blank lines, strip prompts, strip box gutters, max lines, enable auto-trim.
+- CLI examples:
+  - Trim stdin: `printf 'echo a\necho b\n' | trimmeh-cli trim --json`
+  - Force High: `trimmeh-cli trim -f`
+  - Keep box/prompt: `trimmeh-cli trim --keep-box-drawing --keep-prompts`
+  - Preserve blank lines: `trimmeh-cli trim --preserve-blank-lines`
+  - Unchanged exit code = 2 (matches Trimmy).
 
-## Architecture
-**Components**
-- `trimmeh-core` (Rust): parsing + rewrite engine; compiled to:
-  - native CLI (`trimmeh-cli`) for testing and headless use
-  - WebAssembly for in-shell use (gjs supports WebAssembly).
-- `trimmeh-shell` (GNOME Shell extension):
-  - Listens to clipboard owner changes via `St.Clipboard`.
-  - Pulls `text/plain`, runs it through `trimmeh-core` (wasm), and writes back if transformed.
-  - Stores last-original clipboard in memory to enable “Restore previous copy”.
-  - Preferences UI built with libadwaita/GTK4 (runs from `gnome-extensions prefs`).
-- Packaging:
-  - RPM spec for Fedora 43 (`gnome-shell-extension-trimmeh` + `trimmeh-cli`).
-  - Zip for manual install / extensions.gnome.org (pending review).
+## Build from source
+Prereqs: Rust stable (1.91+), `wasm32-unknown-unknown` target, `wasm-bindgen` on PATH, Node+`npx` with `esbuild`, GNOME Shell headers/libs.
 
-**Clipboard strategy (Wayland constraints)**
-- GNOME does not expose `ext-data-control` to regular apps; clipboard managers must run with Shell privileges. We therefore implement as a Shell extension, not a standalone daemon.
-- Auto-paste is not possible without elevated portals. We keep the workflow “rewrite the clipboard, user pastes manually” by default.
-- To avoid reprocessing our own writes, we track a 128-bit hash of the last transformed payload per selection type and bail if unchanged.
+Common tasks (from repo root):
+- `just build-core` — native core
+- `just build-wasm` — wasm artifact
+- `just bundle-extension` — bundle TS → JS & schemas
+- `just install-extension` — dev install + schemas
+- `just extension-zip` — release zip
+- `just rpm` — build RPM (workspace-local buildroot)
 
-**Data flow**
-1. Shell extension receives clipboard owner change.
-2. Fetch `text/plain` (clipboard & primary).
-3. Pass through wasm `trimmeh-core`.
-4. If transformed and within safety limits, update clipboard and record original.
-5. Update UI badge to reflect last action (trimmed / skipped / restored).
+## Release checklist
+- Bump version in `Cargo.toml`/`metadata.json` and tags.
+- `cargo test -p trimmeh-core`
+- `just extension-zip` (for EGO upload)
+- `just rpm` (for Fedora/COPR)
+- Create Git tag/release, attach zip/RPM.
+- Submit zip to extensions.gnome.org (shell-version ["49","48"]).
 
-**Preferences (GSettings schema)**
-- `org.trimmeh.aggressiveness` enum: low|normal|high (default normal).
-- `org.trimmeh.keep-blank-lines` boolean.
-- `org.trimmeh.strip-box-chars` boolean.
-- `org.trimmeh.enable-auto-trim` boolean (default true).
+## Differences vs macOS Trimmy
+- Same parsing heuristics and CLI flags/exit codes.
+- GNOME shell extension instead of menu bar app; no Sparkle updates, no auto-launch toggle needed.
+- Global hotkeys & “Paste Trimmed/Original” buttons in panel are planned (Wayland portal-based paste TBD).
 
-## Roadmap
-1. **MVP (Sprint 1)** — core heuristics + Shell extension auto-trim, prefs panel, RPM packaging.
-2. **Quality (Sprint 2)** — fuzz tests for parser, telemetry-free crash logging to journal, better prompt heuristics (PS1 variants).
-3. **Convenience (Sprint 3)** — optional “Paste trimmed” using xdg-desktop-portal RemoteDesktop/Keyboard injection with explicit one-time consent, plus CLI `trimmeh paste` helper for terminals that allow programmatic paste.
-4. **Polish (Sprint 4)** — localization, onboarding tooltip, extension review for extensions.gnome.org.
+## Contributing / repo quickstart
+- Clone, then: `rustup target add wasm32-unknown-unknown`; `cargo install wasm-bindgen-cli`; `npm install` (if you want esbuild locally, otherwise npx).
+- Dev loop: edit core/TS, run `just install-extension`, reload GNOME Shell extension, test.
+- Tests: `cargo test -p trimmeh-core` (goldens for prompts, gutters, URLs, blank lines, list skipping, backslash merge).
 
-## Build notes (planned)
-- Core: Rust 1.82+; `cargo build --release` produces `libtrimmeh_core.wasm` and `trimmeh-cli`.
-- Wasm glue: `wasm-bindgen --target no-modules` for gjs compatibility; load via `Gio.File.load_contents` and `WebAssembly.instantiate`.
-- Shell extension: TypeScript (ts-node for dev) transpiled to plain JS; bundle with `esbuild` (no node_modules at runtime).
-- Packaging: use `just` recipes to build wasm, bundle extension, and produce RPM via `rpmbuild -ba packaging/fedora/trimmeh.spec`.
-
-## Risks & mitigations
-- **Clipboard access limits on Wayland:** solved by running inside GNOME Shell. No data-control dependency.
-- **User trust:** no network I/O; no telemetry. Keep code small, MIT-licensed.
-- **Portal regressions:** Fedora updates xdg-desktop-portal aggressively; keep portal use optional and feature-flagged.
-
-## Next steps
-- Finalize `trimmeh-core` heuristics spec and test vectors.
-- Scaffold repo layout (`core/`, `shell-extension/`, `packaging/`).
-- Start implementing core parser in Rust + wasm pipeline.
-
----
-Document authored December 7, 2025. Aligns with GNOME 49 (“Brescia”) and xdg-desktop-portal 1.18 releases. Older GNOME releases are intentionally unsupported.***
+## Credit
+Trimmeh is a port of Peter Steinberger’s Trimmy — think of it as Trimmy’s Wayland-native cousin. MIT licensed.
