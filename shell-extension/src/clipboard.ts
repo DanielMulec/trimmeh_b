@@ -51,12 +51,11 @@ export class ClipboardWatcher {
         // If we just performed a manual restore and the content matches, skip retrimming once.
         const last = this.lastWrite.get(selection);
         if (last?.kind === 'restore') {
-            if (last.text === text) {
-                this.lastWrite.delete(selection);
-                return;
-            }
-            // The content changed since we wrote; drop the marker and continue.
+            // Skip exactly one change cycle after a manual restore, even if GNOME
+            // normalizes the text (e.g., newline handling). Prevents the restored
+            // payload from being immediately re-trimmed.
             this.lastWrite.delete(selection);
+            return;
         }
 
         if (!this.settings.get_boolean('enable-auto-trim')) {
