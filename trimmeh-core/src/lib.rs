@@ -122,97 +122,6 @@ fn normalize_newlines(input: &str) -> String {
     input.replace("\r\n", "\n").replace('\r', "\n")
 }
 
-fn strip_prompt(line: &str, aggressiveness: Aggressiveness) -> String {
-    let trimmed = line.trim_start();
-    let prompt_prefixes = ["$ ", "# ", "> ", "% "];
-    for prefix in prompt_prefixes {
-        if trimmed.starts_with(prefix) {
-            return trimmed[prefix.len()..].to_string();
-        }
-    }
-
-    // Common PS1 forms: [user@host dir]$ command
-    if let Some(idx) = trimmed.find("]$ ") {
-        return trimmed[(idx + 3)..].to_string();
-    }
-    if let Some(idx) = trimmed.find("]% ") {
-        return trimmed[(idx + 3)..].to_string();
-    }
-    if let Some(idx) = trimmed.find(">$ ") {
-        return trimmed[(idx + 3)..].to_string();
-    }
-
-    if matches!(aggressiveness, Aggressiveness::High) {
-        let high_prefixes = ["- $ ", "-# ", "| $ ", "• $ "];
-        for prefix in high_prefixes {
-            if trimmed.starts_with(prefix) {
-                return trimmed[prefix.len()..].to_string();
-            }
-        }
-    }
-
-    line.to_string()
-}
-
-fn strip_box_chars(line: &str, aggressiveness: Aggressiveness) -> String {
-    let trimmed = line.trim_start();
-    if trimmed.starts_with("```") || trimmed.starts_with("~~~") {
-        return line.to_string();
-    }
-
-    let mut chars = trimmed.chars();
-    if let Some(first) = chars.next() {
-        if matches!(first, '│' | '┃' | '▕' | '|') {
-            let rest = chars.as_str().trim_start_matches(' ');
-            let leading_spaces = line.len() - trimmed.len();
-            let mut rebuilt = String::new();
-            for _ in 0..leading_spaces {
-                rebuilt.push(' ');
-            }
-            rebuilt.push_str(rest);
-            return rebuilt;
-        }
-
-        if matches!(aggressiveness, Aggressiveness::High) && first == '>' {
-            let rest = chars.as_str().trim_start_matches(' ');
-            let leading_spaces = line.len() - trimmed.len();
-            let mut rebuilt = String::new();
-            for _ in 0..leading_spaces {
-                rebuilt.push(' ');
-            }
-            rebuilt.push_str(rest);
-            return rebuilt;
-        }
-    }
-
-    line.to_string()
-}
-
-static OPS_RE: Lazy<Regex> =
-    Lazy::new(|| Regex::new(r"\s*(&&|\|\||;|\\)\s*").expect("operator regex"));
-
-fn collapse_operator_spacing(input: &str) -> String {
-    let collapsed = OPS_RE.replace_all(input, " $1 ").into_owned();
-    collapse_extra_spaces(&collapsed)
-}
-
-fn collapse_extra_spaces(input: &str) -> String {
-    let mut out = String::with_capacity(input.len());
-    let mut last_space = false;
-    for ch in input.chars() {
-        if ch.is_whitespace() {
-            if !last_space {
-                out.push(' ');
-            }
-            last_space = true;
-        } else {
-            out.push(ch);
-            last_space = false;
-        }
-    }
-    out.trim().to_string()
-}
-
 // ---------- Trimmy-parity helpers ----------
 
 static BOX_CLASS: &str = "│┃╎╏┆┇┊┋╽╿￨｜";
@@ -537,14 +446,6 @@ fn is_likely_command_line(line: &str) -> bool {
     re.is_match(trimmed)
 }
 
-fn is_likely_prompt_command_line(line: &str) -> bool {
-    let trimmed = line.trim();
-    if trimmed.is_empty() {
-        return false;
-    }
-    is_likely_command_line(trimmed)
-}
-
 fn contains_known_command_prefix(lines: &[&str]) -> bool {
     lines.iter().any(|line| {
         let trimmed = line.trim();
@@ -714,5 +615,53 @@ mod tests {
         assert_eq!(res.output, blob);
         assert!(!res.changed);
         assert_eq!(res.reason, Some(TrimReason::SkippedTooLarge));
+    }
+
+    #[test]
+    fn blank_lines_preserved() {
+        let input = "echo first\necho second\n\necho third";
+        let res = trim(
+            input,
+            Aggressiveness::High,
+            Options { keep_blank_lines: true, ..Default::default() },
+        );
+        assert_eq!(res.output, "echo first echo second\n\necho third");
+        assert!(res.changed);
+    }
+
+    #[test]
+    fn prompt_majority_stripped() {
+        let input = "$ echo one\n$ echo two\n$ echo three";
+        let res = trim(input, Aggressiveness::High, Options::default());
+        assert_eq!(res.output, "echo one echo two echo three");
+        assert!(res.changed);
+        assert_eq!(res.reason, Some(TrimReason::PromptStripped));
+    }
+
+    #[test]
+    fn prompt_not_stripped_when_toggle_off() {
+        let input = "$ echo one\n$ echo two\n$ echo three";
+        let res = trim(
+            input,
+            Aggressiveness::High,
+            Options { trim_prompts: false, ..Default::default() },
+        );
+        assert_eq!(res.output, "$ echo one $ echo two $ echo three");
+    }
+
+    #[test]
+    fn url_repair() {
+        let input = "https://example.com/very\n/long/path";
+        let res = trim(input, Aggressiveness::Normal, Options::default());
+        assert_eq!(res.output, "https://example.com/very/long/path");
+        assert!(res.changed);
+    }
+
+    #[test]
+    fn list_is_skipped() {
+        let input = "- item one\n- item two\n- item three";
+        let res = trim(input, Aggressiveness::Normal, Options::default());
+        assert_eq!(res.output, input);
+        assert!(!res.changed);
     }
 }
