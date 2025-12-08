@@ -8,9 +8,9 @@ export class ClipboardWatcher {
     private clipboard = St.Clipboard.get_default();
     private signals: number[] = [];
     private lastOriginal = new Map<number, string>();
-    // Marks a selection whose next owner-change was triggered by a manual restore,
-    // so we don't immediately retrim the original payload we just put back.
-    private restoring = new Set<number>();
+    // Records the last write we performed per selection so we can skip
+    // retrimming a manual restore while still trimming fresh copies.
+    private lastWrite = new Map<number, {kind: 'restore' | 'trim', text: string}>();
     private pollId: number | null = null;
 
     constructor(private trimmer: Trimmer, private settings: Gio.Settings) {}
@@ -43,16 +43,23 @@ export class ClipboardWatcher {
     }
 
     private async onOwnerChange(selection: number): Promise<void> {
-        // If this owner-change was caused by a manual restore, skip trimming once.
-        if (this.restoring.has(selection)) {
-            this.restoring.delete(selection);
-            return;
-        }
-        if (!this.settings.get_boolean('enable-auto-trim')) {
-            return;
-        }
         const text = await this.readText(selection);
         if (!text) {
+            return;
+        }
+
+        // If we just performed a manual restore and the content matches, skip retrimming once.
+        const last = this.lastWrite.get(selection);
+        if (last?.kind === 'restore') {
+            if (last.text === text) {
+                this.lastWrite.delete(selection);
+                return;
+            }
+            // The content changed since we wrote; drop the marker and continue.
+            this.lastWrite.delete(selection);
+        }
+
+        if (!this.settings.get_boolean('enable-auto-trim')) {
             return;
         }
 
@@ -66,6 +73,7 @@ export class ClipboardWatcher {
 
         this.lastOriginal.set(selection, text);
         this.clipboard.set_text(selection, result.output);
+        this.lastWrite.set(selection, {kind: 'trim', text: result.output});
     }
 
     private startPolling(): void {
@@ -97,10 +105,8 @@ export class ClipboardWatcher {
     restore(selection: number): void {
         const original = this.lastOriginal.get(selection);
         if (original) {
-            // Tag this selection so the next owner-change (triggered by set_text)
-            // doesn't immediately retrim the just-restored original.
-            this.restoring.add(selection);
             this.clipboard.set_text(selection, original);
+            this.lastWrite.set(selection, {kind: 'restore', text: original});
         }
     }
 }
