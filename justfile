@@ -25,6 +25,11 @@ bundle-extension:
 	cp shell-extension/metadata.json shell-extension/stylesheet.css shell-extension/wasm/trimmeh_core_bg.wasm shell-extension/wasm/trimmeh_core.js shell-extension/ 2>/dev/null || true
 	glib-compile-schemas shell-extension/schemas
 
+# Bundle the GI-light clipboard watcher core for standalone gjs tests.
+bundle-tests:
+	mkdir -p tests/dist
+	npx esbuild shell-extension/src/clipboardWatcher.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=tests/dist/clipboardWatcher.js
+
 # Install extension locally (Wayland session)
 install-extension: build-wasm bundle-extension
 	mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/trimmeh@trimmeh.dev"

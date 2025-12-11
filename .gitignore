@@ -12,5 +12,6 @@ shell-extension/prefs.js
 shell-extension/wasm/trimmeh_core.js
 shell-extension/wasm/trimmeh_core_bg.wasm
 shell-extension/schemas/gschemas.compiled
+tests/dist/
 upstream/
 gnome-shell-extension-trimmeh-*.tar.gz

@@ -230,8 +230,9 @@ Implement `FakeClipboard` in `tests/fakeClipboard.js`:
 - `set_text` updates map then schedules owner‑change callbacks (optionally multiple times to simulate GNOME quirks).
 
 ### 6.3 Running tests
-Write `tests/clipboard.test.js` and run with:
+The watcher core is TypeScript, so bundle it first, then run gjs:
 ```sh
+just bundle-tests
 gjs -m tests/clipboard.test.js
 ```
 Use `GLib.MainLoop` + Promises to await timeouts:
@@ -279,4 +280,3 @@ When adding any new async clipboard feature:
 2. Implement feature in watcher.
 3. Re‑run harness until stable.
 4. Only then wire UI/portal pieces in gnome‑shell.
-
