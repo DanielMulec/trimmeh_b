@@ -11,6 +11,8 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
     private settings!: Gio.Settings;
     private watcher!: ClipboardWatcher;
     private autoItem!: PopupMenu.PopupSwitchMenuItem;
+    private summaryItem!: PopupMenu.PopupMenuItem;
+    private icon!: St.Icon;
     private openPrefs?: () => void;
 
     _init(settings: Gio.Settings, watcher: ClipboardWatcher, openPrefs?: () => void) {
@@ -19,8 +21,15 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
         this.watcher = watcher;
         this.openPrefs = openPrefs;
 
-        const icon = new St.Icon({ icon_name: 'edit-cut-symbolic', style_class: 'system-status-icon' });
-        this.add_child(icon);
+        this.icon = new St.Icon({ icon_name: 'edit-cut-symbolic', style_class: 'system-status-icon' });
+        this.add_child(this.icon);
+
+        this.summaryItem = new PopupMenu.PopupMenuItem('No actions yet', {
+            reactive: false,
+            can_focus: false,
+        });
+        this.menu.addMenuItem(this.summaryItem);
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
 
         this.autoItem = new PopupMenu.PopupSwitchMenuItem(
             'Auto trim clipboard',
@@ -64,7 +73,25 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
 
         this.settings.connect('changed::enable-auto-trim', () => {
             this.autoItem.setToggleState(this.settings.get_boolean('enable-auto-trim'));
+            this.updateIconState();
         });
+
+        this.watcher.onSummaryChanged = (summary: string) => {
+            this.updateSummary(summary);
+        };
+        if (this.watcher.lastSummary) {
+            this.updateSummary(this.watcher.lastSummary);
+        }
+        this.updateIconState();
+    }
+
+    private updateSummary(summary: string): void {
+        this.summaryItem.label.text = summary || 'No actions yet';
+    }
+
+    private updateIconState(): void {
+        const enabled = this.settings.get_boolean('enable-auto-trim');
+        this.icon.opacity = enabled ? 255 : 120;
     }
 
     addToPanel(): void {

@@ -29,6 +29,7 @@ interface SelectionState {
     lastWriteKind: WriteKind | null;
     restoreGuard: RestoreGuard | null;
     lastOriginal: string | null;
+    lastTrimmed: string | null;
 }
 
 export interface WatcherOptions {
@@ -56,6 +57,11 @@ export class ClipboardWatcher {
         this.graceDelayMs = opts.graceDelayMs ?? DEFAULT_GRACE_DELAY_MS;
         this.pollIntervalMs = opts.pollIntervalMs ?? DEFAULT_POLL_INTERVAL_MS;
     }
+
+    /** Latest single-line preview of the last trim/paste action. */
+    public lastSummary: string = '';
+    /** Optional hook for UI to observe summary changes. */
+    public onSummaryChanged: ((summary: string) => void) | null = null;
 
     enable(selections: number[] = []): void {
         this.enabled = true;
@@ -122,6 +128,7 @@ export class ClipboardWatcher {
         if (toPaste !== prevText) {
             const state = this.getState(selection);
             state.lastOriginal = prevText;
+            state.lastTrimmed = toPaste;
             this.internalWrite(selection, toPaste, 'manual');
         }
 
@@ -307,6 +314,7 @@ export class ClipboardWatcher {
                 lastWriteKind: null,
                 restoreGuard: null,
                 lastOriginal: null,
+                lastTrimmed: null,
             };
             this.states.set(selection, state);
         }
@@ -328,7 +336,22 @@ export class ClipboardWatcher {
             state.restoreGuard = {hash, expiresUsec};
         }
 
+        this.updateSummary(text);
         this.clipboard.set_text(selection, text);
+    }
+
+    protected updateSummary(text: string): void {
+        const singleLine = text.replace(/\n+/g, ' ').trim();
+        const limit = 100;
+        let summary = singleLine;
+        if (summary.length > limit) {
+            const keep = limit - 1;
+            const head = Math.floor(keep / 2);
+            const tail = keep - head;
+            summary = `${summary.slice(0, head)}…${summary.slice(summary.length - tail)}`;
+        }
+        this.lastSummary = summary;
+        this.onSummaryChanged?.(summary);
     }
 }
 

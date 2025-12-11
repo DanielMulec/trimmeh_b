@@ -67,19 +67,19 @@ Trimmeh’s Rust core in `trimmeh-core/src/lib.rs` matches upstream `TextCleaner
      - Paste Trimmed hotkey (default ⌥⌘T),
      - Paste Original hotkey (default ⌥⌘⇧T),
      - Toggle Auto‑Trim hotkey.
-   - Trimmeh status: **not implemented**. GNOME side will need Shell keybindings + prefs UI.
+   - Trimmeh status: **implemented** via GNOME Shell keybindings (`paste-trimmed-hotkey`, `paste-original-hotkey`, `toggle-auto-trim-hotkey`) registered in `shell-extension/src/extension.ts`. Defaults mirror Trimmy semantics (Super+Alt+T / Super+Alt+Shift+T). Prefs UI for rebinding is still TODO.
 
 4. **Menu/panel previews of last action**
    - Upstream refs: menu preview/strike‑through and stats in `MenuContentView.swift` (preview helpers around `#L51-L175`) and `ClipboardMonitor.struckOriginalPreview` (`ClipboardMonitor.swift#L233-L248`).
-   - Trimmeh status: **not implemented**. Panel menu only shows toggles/actions.
+   - Trimmeh status: **implemented (basic)** as a non‑interactive “Last” row showing an ellipsized preview (`shell-extension/src/panel.ts`, updated from watcher `lastSummary`). Strike‑through diff is not implemented yet.
 
 5. **Auto‑trim visual state (icon dimming/feedback)**
    - Upstream refs: menu icon dims when auto‑trim off (see changelog 0.3.0; implementation in SwiftUI menu views).
-   - Trimmeh status: **not implemented**. Could be as simple as toggling a style class or opacity in `shell-extension/src/panel.ts`.
+   - Trimmeh status: **implemented** by reducing panel icon opacity when auto‑trim is off (`shell-extension/src/panel.ts`).
 
 6. **Grace‑delay / promised‑data handling**
    - Upstream refs: `ClipboardMonitor.tick` waits ~80ms before read/trim (`ClipboardMonitor.swift#L102-L105`).
-   - Trimmeh status: **not implemented**. Might not be required on GNOME, but if clipboard data arrives late, add a short `GLib.timeout_add` deferral before `readText`.
+   - Trimmeh status: **implemented** in the race‑safe watcher with a configurable grace delay (`shell-extension/src/clipboardWatcher.ts`).
 
 7. **Optional rich‑text clipboard fallbacks**
    - Upstream refs: “extra clipboard fallbacks” toggle (0.3.0) + `readTextFromPasteboard` in `ClipboardMonitor.swift` (not shown in snippet due to truncation).
@@ -97,22 +97,17 @@ Keep parity semantics:
 
 ## 3. CLI parity
 
-### Status: ⚠️ Mostly parity, with a few gaps
+### Status: ✅ Parity (with small additive compat)
 
 | Feature | Upstream reference | Trimmeh status |
 |---|---|---|
 | High‑force flag `--force/-f` | `TrimmyCLI/main.swift#L40-L42` | Implemented (`trimmeh-cli/src/main.rs#L31-L33`) |
 | Aggressiveness flag | `TrimmyCLI/main.swift#L44-L47` | Implemented (`trimmeh-cli/src/main.rs#L27-L29`) |
 | Preserve blank lines | `TrimmyCLI/main.swift#L48-L51` | Implemented (`--preserve-blank-lines`) |
-| Keep/remove box‑drawing | `TrimmyCLI/main.swift#L52-L55` | **Partially parity**: only `--keep-box-drawing` exists; no `--remove-box-drawing` alias (default already strips). |
-| JSON output schema | `TrimmyCLI/main.swift#L70-L75` | **Differs**: Trimmeh emits `{original, trimmed, changed}` not `{original, trimmed, transformed}`. |
-| File input via `--trim <file>` | `TrimmyCLI/main.swift#L36-L39` + `#L92-L109` | **Missing**: Trimmeh reads stdin only. |
-| Exit codes (0/1/2/3) | `TrimmyCLI/main.swift#L63-L90` | **Slightly different**: exit‑2 on no change matches; JSON encode error not mapped to exit‑3 explicitly. |
-
-Recommended parity tasks:
-1. Add a file/`-` input option to `trimmeh-cli trim` (match `--trim <file>`).
-2. Accept `--remove-box-drawing` as an alias (even if redundant).
-3. Consider matching JSON key name (`transformed`) and JSON error exit code (3).
+| Keep/remove box‑drawing | `TrimmyCLI/main.swift#L52-L55` | Parity: `--keep-box-drawing` + alias `--remove-box-drawing` (default strips). |
+| JSON output schema | `TrimmyCLI/main.swift#L70-L75` | Parity: emits `transformed` like upstream; keeps `changed` as additive alias. |
+| File input via `--trim <file>` | `TrimmyCLI/main.swift#L36-L39` + `#L92-L109` | Parity: `trimmeh-cli trim --trim <file>` or `--trim -` for stdin. |
+| Exit codes (0/1/2/3) | `TrimmyCLI/main.swift#L63-L90` | Parity: exit‑2 on no change; exit‑3 on JSON encode error. |
 
 ---
 
@@ -126,8 +121,6 @@ These are upstream macOS‑specific and not required for Linux parity:
 ---
 
 ## 5. Suggested next implementation order (for future GPT)
-1. **Manual “Paste Trimmed / Paste Original” flows** on Wayland (portal feasibility first).
-2. **Global hotkeys** wired to those flows + auto‑trim toggle.
-3. **Panel previews / feedback** (last action text, icon dimming).
-4. CLI parity clean‑up (file input, JSON key/exit codes).
-5. Optional clipboard fallbacks + grace delay only if real‑world bugs show up.
+1. **Preferences UI for hotkey rebinding** (optional parity polish).
+2. **Strike‑through diff preview** in panel menu (optional polish).
+3. Optional clipboard fallbacks only if real‑world bugs show up.

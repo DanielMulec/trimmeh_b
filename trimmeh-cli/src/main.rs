@@ -1,4 +1,5 @@
 use std::io::{self, Read};
+use std::path::PathBuf;
 
 use anyhow::Result;
 use clap::{ArgAction, Args, Parser, Subcommand, ValueEnum};
@@ -24,6 +25,9 @@ enum Command {
 
 #[derive(Args, Clone)]
 struct TrimArgs {
+    /// Input file (use - for stdin). Alias: --input
+    #[arg(long = "trim", alias = "input", value_name = "FILE")]
+    input: Option<PathBuf>,
     /// Aggressiveness: low, normal, high
     #[arg(short, long, value_enum, default_value_t = AggLevel::Normal)]
     aggressiveness: AggLevel,
@@ -39,6 +43,9 @@ struct TrimArgs {
     /// Preserve leading box-drawing gutters
     #[arg(long = "keep-box-drawing", action = ArgAction::SetFalse, default_value_t = true)]
     strip_box_chars: bool,
+    /// Strip box drawing characters (alias for default behavior)
+    #[arg(long = "remove-box-drawing", action = ArgAction::SetTrue)]
+    remove_box_drawing: bool,
     /// Preserve shell prompts
     #[arg(long = "keep-prompts", action = ArgAction::SetFalse, default_value_t = true)]
     trim_prompts: bool,
@@ -73,7 +80,7 @@ fn main() -> Result<()> {
 }
 
 fn run_trim(args: TrimArgs) -> Result<()> {
-    let input = read_stdin()?;
+    let input = read_input(&args)?;
     let opts = options_from(&args);
     let aggr = if args.force {
         Aggressiveness::High
@@ -88,14 +95,21 @@ fn run_trim(args: TrimArgs) -> Result<()> {
             original: &'a str,
             trimmed: &'a str,
             changed: bool,
+            transformed: bool,
         }
         let payload = Payload {
             original: &input,
             trimmed: &result.output,
             changed: result.changed,
+            transformed: result.changed,
         };
-        let json = serde_json::to_string_pretty(&payload)?;
-        println!("{}", json);
+        match serde_json::to_string_pretty(&payload) {
+            Ok(json) => println!("{json}"),
+            Err(e) => {
+                eprintln!("Failed to encode JSON: {e}");
+                std::process::exit(3);
+            }
+        }
     } else {
         print!("{}", result.output);
         if !result.output.ends_with('\n') {
@@ -110,7 +124,7 @@ fn run_trim(args: TrimArgs) -> Result<()> {
 }
 
 fn run_diff(args: TrimArgs) -> Result<()> {
-    let input = read_stdin()?;
+    let input = read_input(&args)?;
     let opts = options_from(&args);
     let aggr = if args.force {
         Aggressiveness::High
@@ -138,10 +152,21 @@ fn read_stdin() -> Result<String> {
     Ok(buf)
 }
 
+fn read_input(args: &TrimArgs) -> Result<String> {
+    if let Some(path) = &args.input {
+        if path.as_os_str() == "-" {
+            return read_stdin();
+        }
+        let contents = std::fs::read_to_string(path)?;
+        return Ok(contents);
+    }
+    read_stdin()
+}
+
 fn options_from(args: &TrimArgs) -> Options {
     Options {
         keep_blank_lines: args.keep_blank_lines,
-        strip_box_chars: args.strip_box_chars,
+        strip_box_chars: if args.remove_box_drawing { true } else { args.strip_box_chars },
         trim_prompts: args.trim_prompts,
         max_lines: args.max_lines,
     }
