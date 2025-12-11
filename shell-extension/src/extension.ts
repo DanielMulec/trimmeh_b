@@ -35,13 +35,26 @@ export default class TrimmehExtension extends Extension {
     }
 
     private addKeybindings(settings: Gio.Settings): void {
-        const mode = Shell.ActionMode.ALL;
-        const flags = Meta.KeyBindingFlags.IGNORE_AUTOREPEAT;
+        const mode =
+            (Shell as any)?.ActionMode?.ALL ??
+            (Shell as any)?.ActionMode?.NORMAL ??
+            0;
+        const flags =
+            (Meta as any)?.KeyBindingFlags?.IGNORE_AUTOREPEAT ??
+            (Meta as any)?.KeyBindingFlags?.NONE ??
+            0;
 
         const add = (name: string, handler: () => void) => {
             try {
-                if ((Main.wm as any).addKeybinding) {
-                    (Main.wm as any).addKeybinding(name, settings, flags, mode, handler);
+                const wm: any = Main.wm;
+                if (wm?.addKeybinding) {
+                    // GNOME 45–49 signature: (name, settings, flags, modes, handler)
+                    if (wm.addKeybinding.length >= 5) {
+                        wm.addKeybinding(name, settings, flags, mode, handler);
+                    } else {
+                        // Fallback for older/alternate signatures.
+                        wm.addKeybinding(name, settings, flags, handler);
+                    }
                 } else if (global.display?.add_keybinding) {
                     global.display.add_keybinding(name, settings, flags, handler);
                 } else {
