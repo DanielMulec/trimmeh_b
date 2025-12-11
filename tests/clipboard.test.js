@@ -110,6 +110,48 @@ async function testRestoreGuard() {
     assertEq(clip.text(CLIPBOARD), 'echo one\necho two', 'restore not re-trimmed');
 }
 
+async function testPasteTrimmedRestoresClipboard() {
+    const clip = new FakeClipboard();
+    const settings = new FakeSettings();
+    const watcher = new ClipboardWatcher(clip, trimmer, settings, {graceDelayMs: 10});
+    watcher.enable([CLIPBOARD]);
+
+    clip.set_user_text(CLIPBOARD, 'echo one\necho two');
+    await sleep(30);
+
+    let sawDuringPaste = null;
+    await watcher.pasteTrimmed(CLIPBOARD, () => {
+        sawDuringPaste = clip.text(CLIPBOARD);
+    }, 20);
+
+    await sleep(10);
+    assertEq(sawDuringPaste, 'echo one echo two', 'pasteTrimmed sees trimmed clipboard');
+    await sleep(50);
+    assertEq(clip.text(CLIPBOARD), 'echo one\necho two', 'pasteTrimmed restores original');
+}
+
+async function testPasteOriginalRestoresClipboard() {
+    const clip = new FakeClipboard();
+    const settings = new FakeSettings();
+    const watcher = new ClipboardWatcher(clip, trimmer, settings, {graceDelayMs: 10});
+    watcher.enable([CLIPBOARD]);
+
+    // Let auto-trim run once to cache lastOriginal.
+    clip.set_user_text(CLIPBOARD, 'echo one\necho two');
+    await sleep(40);
+    assertEq(clip.text(CLIPBOARD), 'echo one echo two', 'auto-trim primed');
+
+    let sawDuringPaste = null;
+    await watcher.pasteOriginal(CLIPBOARD, () => {
+        sawDuringPaste = clip.text(CLIPBOARD);
+    }, 20);
+
+    await sleep(10);
+    assertEq(sawDuringPaste, 'echo one\necho two', 'pasteOriginal sees original clipboard');
+    await sleep(60);
+    assertEq(clip.text(CLIPBOARD), 'echo one echo two', 'pasteOriginal restores trimmed clipboard');
+}
+
 async function run() {
     const tests = [
         testBasicTrim,
@@ -117,6 +159,8 @@ async function run() {
         testSelfWriteGuard,
         testDisableMidFlight,
         testRestoreGuard,
+        testPasteTrimmedRestoresClipboard,
+        testPasteOriginalRestoresClipboard,
     ];
 
     for (const t of tests) {
@@ -130,4 +174,3 @@ run().catch(e => {
     logError(e);
     imports.system.exit(1);
 });
-

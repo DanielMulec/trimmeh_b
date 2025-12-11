@@ -30,6 +30,16 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
             this.settings.set_boolean('enable-auto-trim', state);
         });
 
+        const pasteTrimmedItem = new PopupMenu.PopupMenuItem('Paste Trimmed');
+        pasteTrimmedItem.connect('activate', () => {
+            this.watcher.pasteTrimmed(St.ClipboardType.CLIPBOARD).catch(logError);
+        });
+
+        const pasteOriginalItem = new PopupMenu.PopupMenuItem('Paste Original');
+        pasteOriginalItem.connect('activate', () => {
+            this.watcher.pasteOriginal(St.ClipboardType.CLIPBOARD).catch(logError);
+        });
+
         const restoreItem = new PopupMenu.PopupMenuItem('Restore last copy');
         restoreItem.connect('activate', () => {
             this.watcher.restore(St.ClipboardType.CLIPBOARD);
@@ -45,6 +55,9 @@ class TrimmehPanelIndicator extends PanelMenu.Button {
         });
 
         this.menu.addMenuItem(this.autoItem);
+        this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
+        this.menu.addMenuItem(pasteTrimmedItem);
+        this.menu.addMenuItem(pasteOriginalItem);
         this.menu.addMenuItem(restoreItem);
         this.menu.addMenuItem(new PopupMenu.PopupSeparatorMenuItem());
         this.menu.addMenuItem(prefsItem);

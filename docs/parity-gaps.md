@@ -56,11 +56,11 @@ Trimmeh’s Rust core in `trimmeh-core/src/lib.rs` matches upstream `TextCleaner
 1. **“Paste Trimmed” (one‑shot trim‑and‑paste, restore clipboard)**
    - Upstream behavior: trims using High aggressiveness, injects paste into frontmost app, then restores clipboard.  
      Upstream refs: `ClipboardMonitor.pasteTrimmed` (`ClipboardMonitor.swift#L200-L214`), called by hotkeys/menu (`HotkeyManager.swift#L56-L102`, `MenuContentView.swift#L21-L45`).
-   - Trimmeh status: **not implemented**. README calls this planned (Wayland portal‑based paste TBD).
+   - Trimmeh status: **implemented** as a panel‑menu action using a GNOME virtual keyboard (`shell-extension/src/virtualPaste.ts`) and safe temporary clipboard swap (`shell-extension/src/clipboardWatcher.ts#pasteTrimmed`).
 
 2. **“Paste Original” (one‑shot paste of untrimmed text)**
    - Upstream refs: `ClipboardMonitor.pasteOriginal` (`ClipboardMonitor.swift#L216-L231`), hotkeys/menu as above.
-   - Trimmeh status: **not implemented** (only “Restore last copy” exists).
+   - Trimmeh status: **implemented** as a panel‑menu action (`shell-extension/src/panel.ts#L33-L49`), restoring prior clipboard after paste (`shell-extension/src/clipboardWatcher.ts#pasteOriginal`).
 
 3. **Global hotkeys for manual actions**
    - Upstream refs: `HotkeyManager` (`HotkeyManager.swift#L6-L111`) registers:
@@ -85,11 +85,8 @@ Trimmeh’s Rust core in `trimmeh-core/src/lib.rs` matches upstream `TextCleaner
    - Upstream refs: “extra clipboard fallbacks” toggle (0.3.0) + `readTextFromPasteboard` in `ClipboardMonitor.swift` (not shown in snippet due to truncation).
    - Trimmeh status: **not implemented**. St.Clipboard `get_text` usually yields plain UTF‑8; if parity issues show up with some apps, consider adding a portal/GTK clipboard fallback plus a GSettings toggle.
 
-#### 2.3 Linux‑specific notes for implementing missing paste features
-Wayland blocks arbitrary keystroke injection. Options:
-- **xdg-desktop-portal RemoteDesktop** or **InputCapture** (GNOME 49+), if allowed, to synthesize Ctrl+V in focused app.
-- **GNOME Shell “clipboard paste portal”** if/when available.
-- If none are viable, feature‑parity may require a **user‑initiated paste UI** (e.g., show trimmed text with “Copy & paste manually”).
+#### 2.3 Linux‑specific notes for paste features
+Trimmeh uses GNOME Shell’s compositor‑side virtual keyboard to inject Ctrl+V, so no portal permission is required on GNOME 49 Wayland. If this ever regresses upstream, fall back to RemoteDesktop portal injection or a copy‑only UI.
 
 Keep parity semantics:
 - Manual actions always use **High aggressiveness** (upstream rule).

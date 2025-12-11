@@ -3,6 +3,7 @@ import Gio from 'gi://Gio';
 import type {ClipboardLike} from './clipboardWatcher.js';
 import {ClipboardWatcher as CoreWatcher} from './clipboardWatcher.js';
 import type {Trimmer} from './wasm.js';
+import {pasteWithFallback} from './virtualPaste.js';
 
 class StClipboardAdapter implements ClipboardLike {
     private clipboard = St.Clipboard.get_default();
@@ -32,5 +33,13 @@ export class ClipboardWatcher extends CoreWatcher {
 
     enable(): void {
         super.enable([St.ClipboardType.CLIPBOARD, St.ClipboardType.PRIMARY]);
+    }
+
+    pasteTrimmed(selection: number = St.ClipboardType.CLIPBOARD): Promise<void> {
+        return super.pasteTrimmed(selection, pasteWithFallback);
+    }
+
+    pasteOriginal(selection: number = St.ClipboardType.CLIPBOARD): Promise<void> {
+        return super.pasteOriginal(selection, pasteWithFallback);
     }
 }

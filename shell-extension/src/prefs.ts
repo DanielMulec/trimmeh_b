@@ -37,8 +37,8 @@ export default class TrimmehPreferences extends ExtensionPreferences {
 
         const info = new Adw.PreferencesGroup({title: 'Manual actions'});
         info.add(new Adw.ActionRow({
-            title: 'Manual trim/restore will arrive in the Shell UI',
-            subtitle: 'Prefs cannot access the live clipboard; use the extension menu once implemented.',
+            title: 'Manual paste actions live in the top‑bar menu',
+            subtitle: 'Use the Trimmeh panel menu for Paste Trimmed / Paste Original / Restore last copy.',
             activatable: false,
         }));
 

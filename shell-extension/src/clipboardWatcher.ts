@@ -40,7 +40,7 @@ const DEFAULT_GRACE_DELAY_MS = 80;
 const DEFAULT_POLL_INTERVAL_MS = 800;
 
 export class ClipboardWatcher {
-    private enabled = false;
+    protected enabled = false;
     private signals: number[] = [];
     private pollId: number | null = null;
     private states = new Map<number, SelectionState>();
@@ -48,9 +48,9 @@ export class ClipboardWatcher {
     private pollIntervalMs: number;
 
     constructor(
-        private clipboard: ClipboardLike,
-        private trimmer: Trimmer,
-        private settings: SettingsLike,
+        protected clipboard: ClipboardLike,
+        protected trimmer: Trimmer,
+        protected settings: SettingsLike,
         opts: WatcherOptions = {},
     ) {
         this.graceDelayMs = opts.graceDelayMs ?? DEFAULT_GRACE_DELAY_MS;
@@ -98,14 +98,84 @@ export class ClipboardWatcher {
             return;
         }
 
-        const hash = hashText(original);
-        const expiresUsec = GLib.get_monotonic_time() + 1_500_000; // ~1.5s
-        state.restoreGuard = {hash, expiresUsec};
-        state.lastWrittenHash = hash;
-        state.lastWriteKind = 'restore';
+        this.internalWrite(selection, original, 'restore', true);
+    }
 
-        log(`Trimmeh: restore requested (selection=${selection}) hash=${hash}`);
-        this.clipboard.set_text(selection, original);
+    /**
+     * One-shot: temporarily replace clipboard with trimmed text (High aggr),
+     * call pasteFn to inject paste, then restore previous clipboard.
+     */
+    async pasteTrimmed(
+        selection: number,
+        pasteFn: () => void,
+        restoreDelayMs = 200,
+    ): Promise<void> {
+        const prevText = await this.readText(selection);
+        if (!prevText) {
+            return;
+        }
+
+        const opts = this.readOptions();
+        const result = this.trimmer.trim(prevText, 'high', opts);
+        const toPaste = result.changed ? result.output : prevText;
+
+        if (toPaste !== prevText) {
+            const state = this.getState(selection);
+            state.lastOriginal = prevText;
+            this.internalWrite(selection, toPaste, 'manual');
+        }
+
+        try {
+            pasteFn();
+        } catch (e) {
+            logError(e);
+        }
+
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, restoreDelayMs, () => {
+            if (this.enabled) {
+                this.internalWrite(selection, prevText, 'restore', true);
+            }
+            return GLib.SOURCE_REMOVE;
+        });
+    }
+
+    /**
+     * One-shot: temporarily replace clipboard with original (untrimmed) text,
+     * call pasteFn, then restore previous clipboard.
+     */
+    async pasteOriginal(
+        selection: number,
+        pasteFn: () => void,
+        restoreDelayMs = 200,
+    ): Promise<void> {
+        const prevText = await this.readText(selection);
+        if (!prevText) {
+            return;
+        }
+
+        const state = this.getState(selection);
+        const original = state.lastOriginal ?? prevText;
+
+        if (original !== prevText) {
+            this.internalWrite(selection, original, 'manual');
+        }
+
+        try {
+            pasteFn();
+        } catch (e) {
+            logError(e);
+        }
+
+        if (original === prevText) {
+            return;
+        }
+
+        GLib.timeout_add(GLib.PRIORITY_DEFAULT, restoreDelayMs, () => {
+            if (this.enabled) {
+                this.internalWrite(selection, prevText, 'restore', true);
+            }
+            return GLib.SOURCE_REMOVE;
+        });
     }
 
     // ---- internals ----
@@ -206,12 +276,10 @@ export class ClipboardWatcher {
         }
 
         state.lastOriginal = text;
-        state.lastWrittenHash = hashText(result.output);
-        state.lastWriteKind = 'trim';
-        this.clipboard.set_text(selection, result.output);
+        this.internalWrite(selection, result.output, 'trim');
     }
 
-    private readOptions(): TrimOptions {
+    protected readOptions(): TrimOptions {
         return {
             keep_blank_lines: this.settings.get_boolean('keep-blank-lines'),
             strip_box_chars: this.settings.get_boolean('strip-box-chars'),
@@ -220,7 +288,7 @@ export class ClipboardWatcher {
         };
     }
 
-    private readText(selection: number): Promise<string | null> {
+    protected readText(selection: number): Promise<string | null> {
         return new Promise(resolve => {
             this.clipboard.get_text(selection, (_text: string | null) => {
                 resolve(_text);
@@ -228,7 +296,7 @@ export class ClipboardWatcher {
         });
     }
 
-    private getState(selection: number): SelectionState {
+    protected getState(selection: number): SelectionState {
         let state = this.states.get(selection);
         if (!state) {
             state = {
@@ -244,9 +312,26 @@ export class ClipboardWatcher {
         }
         return state;
     }
+
+    protected internalWrite(
+        selection: number,
+        text: string,
+        kind: WriteKind,
+        withRestoreGuard = false,
+    ): void {
+        const state = this.getState(selection);
+        const hash = hashText(text);
+        state.lastWrittenHash = hash;
+        state.lastWriteKind = kind;
+        if (withRestoreGuard) {
+            const expiresUsec = GLib.get_monotonic_time() + 1_500_000;
+            state.restoreGuard = {hash, expiresUsec};
+        }
+
+        this.clipboard.set_text(selection, text);
+    }
 }
 
 function hashText(text: string): string {
     return GLib.compute_checksum_for_string(GLib.ChecksumType.SHA256, text, -1);
 }
-

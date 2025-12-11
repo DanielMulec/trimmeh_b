@@ -6,7 +6,7 @@ Trimmeh is the South-Parkian cousin of [Trimmy](https://github.com/steipete/Trim
 - Detects command-like multi-line snippets, joins lines (respects `\` continuations and wrapped tokens), strips prompts/box gutters, repairs wrapped URLs, and preserves blank lines when you ask.
 - Aggressiveness levels: Low / Normal / High (High is used by force/“Paste Trimmed” flows).
 - Toggles: Keep blank lines; Strip box gutters; Strip prompts; Enable auto-trim.
-- Manual: “Restore last copy” (one-shot), panel menu actions; CLI with `--force`, `--json`, preserve/keep flags.
+- Manual: “Paste Trimmed”, “Paste Original”, and “Restore last copy” (one-shot) via panel menu; CLI with `--force`, `--json`, preserve/keep flags.
 - Safety: skips blobs >10 lines by default; tags own writes to avoid loops.
 
 ## Platform & support stance
@@ -52,7 +52,7 @@ Common tasks (from repo root):
 ## Differences vs macOS Trimmy
 - Same parsing heuristics and CLI flags/exit codes.
 - GNOME shell extension instead of menu bar app; no Sparkle updates, no auto-launch toggle needed.
-- Global hotkeys & “Paste Trimmed/Original” buttons in panel are planned (Wayland portal-based paste TBD).
+- Manual “Paste Trimmed/Original” actions are available in the panel menu; global hotkeys are still planned.
 
 ## Contributing / repo quickstart
 - Clone, then: `rustup target add wasm32-unknown-unknown`; `cargo install wasm-bindgen-cli`; `npm install` (if you want esbuild locally, otherwise npx).
