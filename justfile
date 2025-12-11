@@ -35,7 +35,8 @@ install-extension: build-wasm bundle-extension
 	mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/trimmeh@trimmeh.dev"
 	cp -r shell-extension/* "${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/trimmeh@trimmeh.dev/"
 	gnome-extensions disable trimmeh@trimmeh.dev 2>/dev/null || true
-	gnome-extensions enable trimmeh@trimmeh.dev
+	gnome-extensions enable trimmeh@trimmeh.dev 2>/dev/null || true
+	@echo "Trimmeh installed. If it doesn't show up yet, log out/in or enable it in the Extensions app."
 
 # RPM build (expects rpmbuild and fedora tree)
 rpm:
