@@ -1,6 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <schemalist>
-  <schema id="org.trimmeh" path="/org/trimmeh/">
+  <!-- Standard GNOME Shell extension schema namespace. -->
+  <schema id="org.gnome.shell.extensions.trimmeh" path="/org/gnome/shell/extensions/trimmeh/">
     <key name="aggressiveness" type="s">
       <default>'normal'</default>
       <summary>Aggressiveness level</summary>

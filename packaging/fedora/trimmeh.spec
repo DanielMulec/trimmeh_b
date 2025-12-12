@@ -33,7 +33,7 @@ just bundle-extension
 mkdir -p %{buildroot}%{_datadir}/gnome-shell/extensions/trimmeh@trimmeh.dev/
 cp -a shell-extension/* %{buildroot}%{_datadir}/gnome-shell/extensions/trimmeh@trimmeh.dev/
 mkdir -p %{buildroot}%{_datadir}/glib-2.0/schemas
-cp shell-extension/schemas/org.trimmeh.gschema.xml %{buildroot}%{_datadir}/glib-2.0/schemas/
+cp shell-extension/schemas/org.gnome.shell.extensions.trimmeh.gschema.xml %{buildroot}%{_datadir}/glib-2.0/schemas/
 
 %post
 glib-compile-schemas %{_datadir}/glib-2.0/schemas > /dev/null 2>&1 || :
@@ -41,7 +41,7 @@ glib-compile-schemas %{_datadir}/glib-2.0/schemas > /dev/null 2>&1 || :
 %files
 %license LICENSE
 %{_datadir}/gnome-shell/extensions/trimmeh@trimmeh.dev/
-%{_datadir}/glib-2.0/schemas/org.trimmeh.gschema.xml
+%{_datadir}/glib-2.0/schemas/org.gnome.shell.extensions.trimmeh.gschema.xml
 
 %changelog
 * Sun Dec 07 2025 Trimmeh Team <noreply@trimmeh.dev> 0.1.0-1

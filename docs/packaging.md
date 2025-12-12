@@ -16,7 +16,7 @@
 - Requires: `gnome-shell >= 49`, `gjs`, `xdg-desktop-portal >= 1.18` (optional feature), `gtk4`
 - Files:
   - `/usr/share/gnome-shell/extensions/trimmeh@trimmeh.dev/*`
-  - `/usr/share/glib-2.0/schemas/org.trimmeh.gschema.xml`
+  - `/usr/share/glib-2.0/schemas/org.gnome.shell.extensions.trimmeh.gschema.xml`
   - `/usr/bin/trimmeh-cli` (optional subpackage `trimmeh-cli`)
 - %post: `glib-compile-schemas /usr/share/glib-2.0/schemas/`
 - %files for CLI subpackage guarded so desktop installs without CLI are possible.

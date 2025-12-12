@@ -17,7 +17,7 @@ shell-extension/
     libtrimmeh_core.wasm
     trimmeh_core.js   # wasm-bindgen glue (no modules)
   schemas/
-    org.trimmeh.gschema.xml
+    org.gnome.shell.extensions.trimmeh.gschema.xml
   stylesheet.css
 ```
 
@@ -35,11 +35,15 @@ shell-extension/
 - Wrap exported `trim_js(input, aggressiveness, opts)` in `wasm.ts` to provide typed helpers.
 
 ## Settings keys (GSettings)
-- `org.trimmeh.aggressiveness` (enum string): `low|normal|high`
-- `org.trimmeh.keep-blank-lines` (bool)
-- `org.trimmeh.strip-box-chars` (bool)
-- `org.trimmeh.enable-auto-trim` (bool)
-- `org.trimmeh.max-lines` (int, default 10)
+Schema id: `org.gnome.shell.extensions.trimmeh`
+- `aggressiveness` (enum string): `low|normal|high`
+- `keep-blank-lines` (bool)
+- `strip-box-chars` (bool)
+- `enable-auto-trim` (bool)
+- `max-lines` (int, default 10)
+- `paste-trimmed-hotkey` (as)
+- `paste-original-hotkey` (as)
+- `toggle-auto-trim-hotkey` (as)
 
 ## Preferences UI (libadwaita)
 - ListBox with switches for each setting and a combobox for aggressiveness.

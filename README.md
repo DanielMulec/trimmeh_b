@@ -21,9 +21,8 @@ Trimmeh is the South-Parkian cousin of [Trimmy](https://github.com/steipete/Trim
 
 ## Using it
 - Enable the extension (GNOME Extensions app or `gnome-extensions enable trimmeh@trimmeh.dev`).
-- Top-bar menu: Auto-trim toggle, Restore last copy (one-shot), Preferences.
 - Top-bar menu: Last preview, Auto-trim toggle, Paste Trimmed, Paste Original, Restore last copy, Preferences.
-- Global hotkeys (defaults): Paste Trimmed = `<Super><Alt>t`, Paste Original = `<Super><Alt><Shift>t`. Rebind via dconf key arrays `paste-trimmed-hotkey` / `paste-original-hotkey`.
+- Global hotkeys (defaults): Paste Trimmed = `<Super><Alt>t`, Paste Original = `<Super><Alt><Shift>t`. Rebind via schema `org.gnome.shell.extensions.trimmeh` keys `paste-trimmed-hotkey` / `paste-original-hotkey`.
 - Preferences (libadwaita): aggressiveness, keep blank lines, strip prompts, strip box gutters, max lines, enable auto-trim.
 - CLI examples:
   - Trim stdin: `printf 'echo a\necho b\n' | trimmeh-cli trim --json`
@@ -55,7 +54,7 @@ Common tasks (from repo root):
 ## Differences vs macOS Trimmy
 - Same parsing heuristics and CLI flags/exit codes.
 - GNOME shell extension instead of menu bar app; no Sparkle updates, no auto-launch toggle needed.
-- Manual “Paste Trimmed/Original” actions are available in the panel menu; global hotkeys are still planned.
+- Manual “Paste Trimmed/Original” actions are available in the panel menu and via global hotkeys.
 
 ## Contributing / repo quickstart
 - Clone, then: `rustup target add wasm32-unknown-unknown`; `cargo install wasm-bindgen-cli`; `npm install` (if you want esbuild locally, otherwise npx).
