@@ -46,36 +46,28 @@ export default class TrimmehExtension extends Extension {
 
         const add = (name: string, handler: () => void) => {
             try {
-                const wm: any = Main.wm;
-                if (wm?.addKeybinding) {
-                    // GNOME 45–49 signature: (name, settings, flags, modes, handler)
-                    if (wm.addKeybinding.length >= 5) {
-                        wm.addKeybinding(name, settings, flags, mode, handler);
-                    } else {
-                        // Fallback for older/alternate signatures.
-                        wm.addKeybinding(name, settings, flags, handler);
-                    }
-                } else if (global.display?.add_keybinding) {
-                    global.display.add_keybinding(name, settings, flags, handler);
-                } else {
-                    log(`Trimmeh: no keybinding API available for ${name}`);
-                    return;
-                }
+                // GNOME 48/49 use: (name, settings, flags, modes, handler)
+                (Main.wm as any).addKeybinding(name, settings, flags, mode, handler);
+                (Main.wm as any).allowKeybinding?.(name, mode);
                 const current = (settings as any).get_strv?.(name) ?? [];
                 log(`Trimmeh: keybinding registered ${name} -> ${JSON.stringify(current)}`);
                 this.keybindingNames.push(name);
             } catch (e) {
+                // If GNOME ever changes the signature again, we'll see this.
                 logError(e);
             }
         };
 
         add('paste-trimmed-hotkey', () => {
+            log('Trimmeh: hotkey paste-trimmed fired');
             this.watcher?.pasteTrimmed().catch(logError);
         });
         add('paste-original-hotkey', () => {
+            log('Trimmeh: hotkey paste-original fired');
             this.watcher?.pasteOriginal().catch(logError);
         });
         add('toggle-auto-trim-hotkey', () => {
+            log('Trimmeh: hotkey toggle-auto-trim fired');
             const current = settings.get_boolean('enable-auto-trim');
             settings.set_boolean('enable-auto-trim', !current);
         });
