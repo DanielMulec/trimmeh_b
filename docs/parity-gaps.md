@@ -1,4 +1,4 @@
-# Trimmeh ↔ Trimmy Parity Gaps (as of 2025‑12‑11)
+# Trimmeh ↔ Trimmy Parity Gaps (as of 2025‑12‑12)
 
 This document compares upstream **Trimmy** (macOS app in `upstream/Trimmy/`) with **Trimmeh** (GNOME/Wayland port in this repo).  
 Goal: feature parity for “go‑live”, or explicit, well‑understood deviations.
@@ -10,8 +10,8 @@ Read this first if you are a future agent:
 
 ## TL;DR
 - **Core trimming heuristics:** parity achieved (Rust mirrors Swift almost line‑for‑line).
-- **GNOME shell extension:** missing several UI/manual‑paste features from Trimmy.
-- **CLI:** functional, but not 1:1 with TrimmyCLI flags/I/O/JSON schema.
+- **GNOME shell extension:** auto‑trim + manual paste + hotkeys are implemented; remaining gaps are mostly UX polish and optional clipboard/paste fallbacks.
+- **CLI:** parity achieved (with small additive compat).
 
 ---
 
@@ -39,54 +39,49 @@ Trimmeh’s Rust core in `trimmeh-core/src/lib.rs` matches upstream `TextCleaner
 
 ## 2. GNOME shell extension parity
 
-### Status: ⚠️ Partial parity (auto‑trim works; manual paste UX missing)
+### Status: ⚠️ Mostly parity (core + manual paste work; some polish missing)
 
 #### 2.1 Implemented parity features
 | Feature | Upstream reference | Trimmeh status |
 |---|---|---|
 | Auto‑trim clipboard when command‑like | `ClipboardMonitor.tick/trimClipboardIfNeeded` (`ClipboardMonitor.swift#L93-L107`) | Implemented via `ClipboardWatcher.onOwnerChange` in `shell-extension/src/clipboard.ts#L48-L94` |
+| Clipboard change detection | `NSPasteboard.changeCount` loop + debounce | Implemented via `St.Clipboard` owner‑change when available; falls back to polling on GNOME builds where the signal is missing (see `shell-extension/src/clipboardWatcher.ts`) |
 | Aggressiveness levels Low/Normal/High | `Aggressiveness.swift` + settings panes | Implemented (`aggressiveness` GSettings) |
 | Keep blank lines toggle | `AppSettings.preserveBlankLines` | Implemented (`keep-blank-lines`) |
 | Remove box‑drawing chars toggle | `AppSettings.removeBoxDrawing` | Implemented (`strip-box-chars`) |
 | Safety valve: skip > max lines | `TextCleaner.transformIfCommand` + watcher guard | Implemented in core (`max-lines`), wired through settings |
 | Restore previous copy | `ClipboardMonitor.pasteOriginal` uses cached original (`ClipboardMonitor.swift#L216-L230`) | Implemented as “Restore last copy” panel item (`shell-extension/src/panel.ts#L33-L36`) + watcher cache (`shell-extension/src/clipboard.ts#L10-L132`) |
+| Paste Trimmed / Paste Original | `ClipboardMonitor.pasteTrimmed` / `.pasteOriginal` | Implemented via safe temporary clipboard swap (`shell-extension/src/clipboardWatcher.ts`) + compositor virtual keyboard paste injection (`shell-extension/src/virtualPaste.ts`) |
+| Global hotkeys | `HotkeyManager` (`HotkeyManager.swift#L6-L111`) | Implemented via GNOME Shell keybindings registered in `shell-extension/src/extension.ts` (GSettings keys `paste-trimmed-hotkey`, `paste-original-hotkey`, `toggle-auto-trim-hotkey`) |
 
-#### 2.2 Missing / divergent extension features (need for parity)
+#### 2.2 Remaining gaps / known differences
 
-1. **“Paste Trimmed” (one‑shot trim‑and‑paste, restore clipboard)**
-   - Upstream behavior: trims using High aggressiveness, injects paste into frontmost app, then restores clipboard.  
-     Upstream refs: `ClipboardMonitor.pasteTrimmed` (`ClipboardMonitor.swift#L200-L214`), called by hotkeys/menu (`HotkeyManager.swift#L56-L102`, `MenuContentView.swift#L21-L45`).
-   - Trimmeh status: **implemented** as a panel‑menu action using a GNOME virtual keyboard (`shell-extension/src/virtualPaste.ts`) and safe temporary clipboard swap (`shell-extension/src/clipboardWatcher.ts#pasteTrimmed`).
+1. **Preferences UI for hotkey rebinding**
+   - Upstream: hotkeys are configurable in‑app.
+   - Trimmeh: hotkeys are stored in GSettings, but the preferences UI does not currently expose a keybinding editor. (Users can rebind via `gsettings` or dconf.)
 
-2. **“Paste Original” (one‑shot paste of untrimmed text)**
-   - Upstream refs: `ClipboardMonitor.pasteOriginal` (`ClipboardMonitor.swift#L216-L231`), hotkeys/menu as above.
-   - Trimmeh status: **implemented** as a panel‑menu action (`shell-extension/src/panel.ts#L33-L49`), restoring prior clipboard after paste (`shell-extension/src/clipboardWatcher.ts#pasteOriginal`).
-
-3. **Global hotkeys for manual actions**
-   - Upstream refs: `HotkeyManager` (`HotkeyManager.swift#L6-L111`) registers:
-     - Paste Trimmed hotkey (default ⌥⌘T),
-     - Paste Original hotkey (default ⌥⌘⇧T),
-     - Toggle Auto‑Trim hotkey.
-   - Trimmeh status: **implemented** via GNOME Shell keybindings (`paste-trimmed-hotkey`, `paste-original-hotkey`, `toggle-auto-trim-hotkey`) registered in `shell-extension/src/extension.ts`. Defaults mirror Trimmy semantics (Super+Alt+T / Super+Alt+Shift+T). Prefs UI for rebinding is still TODO.
-
-4. **Menu/panel previews of last action**
+2. **Menu/panel previews of last action**
    - Upstream refs: menu preview/strike‑through and stats in `MenuContentView.swift` (preview helpers around `#L51-L175`) and `ClipboardMonitor.struckOriginalPreview` (`ClipboardMonitor.swift#L233-L248`).
    - Trimmeh status: **implemented (basic)** as a non‑interactive “Last” row showing an ellipsized preview (`shell-extension/src/panel.ts`, updated from watcher `lastSummary`). Strike‑through diff is not implemented yet.
 
-5. **Auto‑trim visual state (icon dimming/feedback)**
+3. **Paste injection reliability (Wayland)**
+   - Upstream: uses macOS accessibility APIs to paste reliably into the frontmost app.
+   - Trimmeh: uses GNOME Shell’s compositor‑side virtual keyboard. This is Wayland‑native but still best‑effort: some apps may ignore synthetic paste key events. To reduce failures, Trimmeh waits briefly for hotkey modifiers (Super/Alt/Shift) to be released before injecting paste.
+
+4. **Auto‑trim visual state (icon dimming/feedback)**
    - Upstream refs: menu icon dims when auto‑trim off (see changelog 0.3.0; implementation in SwiftUI menu views).
    - Trimmeh status: **implemented** by reducing panel icon opacity when auto‑trim is off (`shell-extension/src/panel.ts`).
 
-6. **Grace‑delay / promised‑data handling**
+5. **Grace‑delay / promised‑data handling**
    - Upstream refs: `ClipboardMonitor.tick` waits ~80ms before read/trim (`ClipboardMonitor.swift#L102-L105`).
    - Trimmeh status: **implemented** in the race‑safe watcher with a configurable grace delay (`shell-extension/src/clipboardWatcher.ts`).
 
-7. **Optional rich‑text clipboard fallbacks**
+6. **Optional rich‑text clipboard fallbacks**
    - Upstream refs: “extra clipboard fallbacks” toggle (0.3.0) + `readTextFromPasteboard` in `ClipboardMonitor.swift` (not shown in snippet due to truncation).
    - Trimmeh status: **not implemented**. St.Clipboard `get_text` usually yields plain UTF‑8; if parity issues show up with some apps, consider adding a portal/GTK clipboard fallback plus a GSettings toggle.
 
 #### 2.3 Linux‑specific notes for paste features
-Trimmeh uses GNOME Shell’s compositor‑side virtual keyboard to inject Ctrl+V, so no portal permission is required on GNOME 49 Wayland. If this ever regresses upstream, fall back to RemoteDesktop portal injection or a copy‑only UI.
+Trimmeh uses GNOME Shell’s compositor‑side virtual keyboard to inject paste key events (prefers Shift+Insert, falls back to Ctrl+V), so no portal permission is required on GNOME 49 Wayland. Because GNOME keybindings fire while modifiers are still held, Trimmeh waits briefly for Super/Alt/Shift to be released before injecting paste (best‑effort).
 
 Keep parity semantics:
 - Manual actions always use **High aggressiveness** (upstream rule).
