@@ -35,10 +35,10 @@ export default class TrimmehExtension extends Extension {
     }
 
     private addKeybindings(settings: Gio.Settings): void {
+        const actionMode: any = (Shell as any)?.ActionMode;
         const mode =
-            (Shell as any)?.ActionMode?.ALL ??
-            (Shell as any)?.ActionMode?.NORMAL ??
-            0;
+            (actionMode?.NORMAL ?? 0) |
+            (actionMode?.OVERVIEW ?? 0);
         const flags =
             (Meta as any)?.KeyBindingFlags?.IGNORE_AUTOREPEAT ??
             (Meta as any)?.KeyBindingFlags?.NONE ??
@@ -61,6 +61,8 @@ export default class TrimmehExtension extends Extension {
                     log(`Trimmeh: no keybinding API available for ${name}`);
                     return;
                 }
+                const current = (settings as any).get_strv?.(name) ?? [];
+                log(`Trimmeh: keybinding registered ${name} -> ${JSON.stringify(current)}`);
                 this.keybindingNames.push(name);
             } catch (e) {
                 logError(e);
