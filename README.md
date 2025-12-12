@@ -22,7 +22,7 @@ Trimmeh is the South-Parkian cousin of [Trimmy](https://github.com/steipete/Trim
 ## Using it
 - Enable the extension (GNOME Extensions app or `gnome-extensions enable trimmeh@trimmeh.dev`).
 - Top-bar menu: Last preview, Auto-trim toggle, Paste Trimmed, Paste Original, Restore last copy, Preferences.
-- Global hotkeys (defaults): Paste Trimmed = `<Super><Alt>t`, Paste Original = `<Super><Alt><Shift>t`. Hotkeys are stored in GSettings (you may see different bindings in logs if you changed them).
+- Global hotkeys (defaults): Paste Trimmed = `<Super><Alt>t`, Paste Original = `<Super><Alt><Shift>t`. Rebind them in Trimmeh Preferences (Hotkeys section) or via GSettings.
   - Inspect: `gsettings get org.gnome.shell.extensions.trimmeh paste-trimmed-hotkey`
   - Set (example): `gsettings set org.gnome.shell.extensions.trimmeh paste-trimmed-hotkey "['<Super><Alt>y']"` and `gsettings set org.gnome.shell.extensions.trimmeh paste-original-hotkey "['<Super><Alt><Shift>y']"`
 - Manual paste is injected via GNOME Shell’s compositor virtual keyboard (prefers Shift+Insert, falls back to Ctrl+V). Trimmeh waits briefly for hotkey modifiers (Super/Alt/Shift) to be released before injecting paste (Wayland-friendly, best-effort).

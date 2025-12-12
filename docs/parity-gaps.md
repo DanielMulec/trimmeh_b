@@ -56,27 +56,23 @@ Trimmeh’s Rust core in `trimmeh-core/src/lib.rs` matches upstream `TextCleaner
 
 #### 2.2 Remaining gaps / known differences
 
-1. **Preferences UI for hotkey rebinding**
-   - Upstream: hotkeys are configurable in‑app.
-   - Trimmeh: hotkeys are stored in GSettings, but the preferences UI does not currently expose a keybinding editor. (Users can rebind via `gsettings` or dconf.)
-
-2. **Menu/panel previews of last action**
+1. **Menu/panel previews of last action**
    - Upstream refs: menu preview/strike‑through and stats in `MenuContentView.swift` (preview helpers around `#L51-L175`) and `ClipboardMonitor.struckOriginalPreview` (`ClipboardMonitor.swift#L233-L248`).
    - Trimmeh status: **implemented (basic)** as a non‑interactive “Last” row showing an ellipsized preview (`shell-extension/src/panel.ts`, updated from watcher `lastSummary`). Strike‑through diff is not implemented yet.
 
-3. **Paste injection reliability (Wayland)**
+2. **Paste injection reliability (Wayland)**
    - Upstream: uses macOS accessibility APIs to paste reliably into the frontmost app.
    - Trimmeh: uses GNOME Shell’s compositor‑side virtual keyboard. This is Wayland‑native but still best‑effort: some apps may ignore synthetic paste key events. To reduce failures, Trimmeh waits briefly for hotkey modifiers (Super/Alt/Shift) to be released before injecting paste.
 
-4. **Auto‑trim visual state (icon dimming/feedback)**
+3. **Auto‑trim visual state (icon dimming/feedback)**
    - Upstream refs: menu icon dims when auto‑trim off (see changelog 0.3.0; implementation in SwiftUI menu views).
    - Trimmeh status: **implemented** by reducing panel icon opacity when auto‑trim is off (`shell-extension/src/panel.ts`).
 
-5. **Grace‑delay / promised‑data handling**
+4. **Grace‑delay / promised‑data handling**
    - Upstream refs: `ClipboardMonitor.tick` waits ~80ms before read/trim (`ClipboardMonitor.swift#L102-L105`).
    - Trimmeh status: **implemented** in the race‑safe watcher with a configurable grace delay (`shell-extension/src/clipboardWatcher.ts`).
 
-6. **Optional rich‑text clipboard fallbacks**
+5. **Optional rich‑text clipboard fallbacks**
    - Upstream refs: “extra clipboard fallbacks” toggle (0.3.0) + `readTextFromPasteboard` in `ClipboardMonitor.swift` (not shown in snippet due to truncation).
    - Trimmeh status: **not implemented**. St.Clipboard `get_text` usually yields plain UTF‑8; if parity issues show up with some apps, consider adding a portal/GTK clipboard fallback plus a GSettings toggle.
 
