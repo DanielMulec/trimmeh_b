@@ -112,6 +112,6 @@ These are upstream macOS‑specific and not required for Linux parity:
 ---
 
 ## 5. Suggested next implementation order (for future GPT)
-1. **Preferences UI for hotkey rebinding** (optional parity polish).
-2. **Strike‑through diff preview** in panel menu (optional polish).
-3. Optional clipboard fallbacks only if real‑world bugs show up.
+1. **Strike‑through diff preview** in panel menu (optional polish).
+2. Optional rich‑text clipboard fallbacks only if real‑world bugs show up.
+3. Optional portal-based paste injection fallback + user feedback (if best‑effort key injection isn’t reliable enough).

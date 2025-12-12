@@ -187,22 +187,31 @@ disable():
 
 ---
 
-## 5. Implementation notes for future parity features
+## 5. Implementation notes (current)
 
 ### Manual “Paste Trimmed / Paste Original”
-When you implement these, treat them as a special `lastWriteKind='manual'`:
-1. Compute trimmed/original text (High aggr for trimmed).
-2. Temporarily write to clipboard with `lastWrittenHash` set.
-3. Trigger paste via portal or UI.
-4. Restore clipboard, again setting `lastWrittenHash` for restore.
+These are implemented in the shell extension:
+- Temporary clipboard swap + restore logic: `shell-extension/src/clipboardWatcher.ts`
+- Paste injection: `shell-extension/src/virtualPaste.ts` (best‑effort virtual keyboard)
 
-Auto‑trim must **not** run on either of those internal writes.
+Current behavior:
+1. Read current clipboard text.
+2. Compute the High-aggressiveness trimmed version (for “Paste Trimmed”) or use cached original (for “Paste Original”).
+3. Temporarily write the text to the clipboard while setting self-write guards (`lastWrittenHash` and, for restore, `restoreGuard`).
+4. Inject paste (virtual keyboard; waits briefly for hotkey modifiers to be released).
+5. Restore the previous clipboard contents after a short delay.
+
+Auto‑trim is prevented from re-triggering on these internal writes via the hash guards.
 
 ### Polling fallback
-If using polling (no owner‑change), avoid constant rescheduling:
-- Store `lastSeenHash`.
-- In poll tick, read text; if hash equals `lastSeenHash`, do nothing.
-- If changed, call `onOwnerChange`.
+If `St.Clipboard` does not expose the `owner-change` signal (seen on some GNOME builds), the extension falls back to polling.
+
+Current implementation:
+- A timer periodically calls `onOwnerChange()` for CLIPBOARD/PRIMARY.
+- The usual debounce + read + hash guards still apply, so it stays race-safe.
+
+Potential optimization (not implemented):
+- Store `lastSeenHash` per selection to avoid reading/processing unchanged clipboard contents on every poll tick.
 
 ---
 
