@@ -63,6 +63,8 @@ Trimmeh’s Rust core in `trimmeh-core/src/lib.rs` matches upstream `TextCleaner
 2. **Paste injection reliability (Wayland)**
    - Upstream: uses macOS accessibility APIs to paste reliably into the frontmost app.
    - Trimmeh: uses GNOME Shell’s compositor‑side virtual keyboard. This is Wayland‑native but still best‑effort: some apps may ignore synthetic paste key events. To reduce failures, Trimmeh waits briefly for hotkey modifiers (Super/Alt/Shift) to be released before injecting paste.
+     - User-visible limitation: you may see “hotkey … fired” in logs but no paste occurs in the target app.
+     - Workaround: use auto-trim + normal app paste (and “Restore last copy” if you want to revert the clipboard) when a synthetic paste is ignored.
 
 3. **Auto‑trim visual state (icon dimming/feedback)**
    - Upstream refs: menu icon dims when auto‑trim off (see changelog 0.3.0; implementation in SwiftUI menu views).

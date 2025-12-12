@@ -26,6 +26,7 @@ Trimmeh is the South-Parkian cousin of [Trimmy](https://github.com/steipete/Trim
   - Inspect: `gsettings get org.gnome.shell.extensions.trimmeh paste-trimmed-hotkey`
   - Set (example): `gsettings set org.gnome.shell.extensions.trimmeh paste-trimmed-hotkey "['<Super><Alt>y']"` and `gsettings set org.gnome.shell.extensions.trimmeh paste-original-hotkey "['<Super><Alt><Shift>y']"`
 - Manual paste is injected via GNOME Shell’s compositor virtual keyboard (prefers Shift+Insert, falls back to Ctrl+V). Trimmeh waits briefly for hotkey modifiers (Super/Alt/Shift) to be released before injecting paste (Wayland-friendly, best-effort).
+- Known limitation: on Wayland this paste injection is still best-effort; some apps may ignore synthetic paste key events. If a paste hotkey/menu action fires but nothing is pasted, try again or rely on auto-trim + normal app paste (and use “Restore last copy” if you need to revert the clipboard).
 - Preferences (libadwaita): aggressiveness, keep blank lines, strip prompts, strip box gutters, max lines, enable auto-trim.
 - CLI examples:
   - Trim stdin: `printf 'echo a\necho b\n' | trimmeh-cli trim --json`
