@@ -113,7 +113,7 @@ export class ClipboardWatcher {
      */
     async pasteTrimmed(
         selection: number,
-        pasteFn: () => void,
+        pasteFn: () => void | Promise<void>,
         restoreDelayMs = 200,
     ): Promise<void> {
         const prevText = await this.readText(selection);
@@ -133,7 +133,7 @@ export class ClipboardWatcher {
         }
 
         try {
-            pasteFn();
+            await pasteFn();
         } catch (e) {
             logError(e);
         }
@@ -152,7 +152,7 @@ export class ClipboardWatcher {
      */
     async pasteOriginal(
         selection: number,
-        pasteFn: () => void,
+        pasteFn: () => void | Promise<void>,
         restoreDelayMs = 200,
     ): Promise<void> {
         const prevText = await this.readText(selection);
@@ -168,7 +168,7 @@ export class ClipboardWatcher {
         }
 
         try {
-            pasteFn();
+            await pasteFn();
         } catch (e) {
             logError(e);
         }
