@@ -2,7 +2,7 @@ import St from 'gi://St';
 import Gio from 'gi://Gio';
 import type {ClipboardLike} from './clipboardWatcher.js';
 import {ClipboardWatcher as CoreWatcher} from './clipboardWatcher.js';
-import type {Trimmer} from './wasm.js';
+import type {Trimmer} from './trimmer.js';
 import {pasteWithFallback} from './virtualPaste.js';
 
 class StClipboardAdapter implements ClipboardLike {

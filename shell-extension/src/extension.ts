@@ -1,7 +1,7 @@
 import {Extension} from 'resource:///org/gnome/shell/extensions/extension.js';
 import {PanelIndicator} from './panel.js';
 import {ClipboardWatcher} from './clipboard.js';
-import {createWasmTrimAdapter} from './wasm.js';
+import {createTrimAdapter} from './trimmer.js';
 import * as Main from 'resource:///org/gnome/shell/ui/main.js';
 import Meta from 'gi://Meta';
 import Shell from 'gi://Shell';
@@ -14,7 +14,7 @@ export default class TrimmehExtension extends Extension {
 
     async enable(): Promise<void> {
         const settings = this.getSettings();
-        const trimmer = await createWasmTrimAdapter(this.dir.get_path());
+        const trimmer = createTrimAdapter();
         this.watcher = new ClipboardWatcher(trimmer, settings);
         this.watcher.enable();
 
@@ -49,8 +49,6 @@ export default class TrimmehExtension extends Extension {
                 // GNOME 48/49 use: (name, settings, flags, modes, handler)
                 (Main.wm as any).addKeybinding(name, settings, flags, mode, handler);
                 (Main.wm as any).allowKeybinding?.(name, mode);
-                const current = (settings as any).get_strv?.(name) ?? [];
-                log(`Trimmeh: keybinding registered ${name} -> ${JSON.stringify(current)}`);
                 this.keybindingNames.push(name);
             } catch (e) {
                 // If GNOME ever changes the signature again, we'll see this.
@@ -59,15 +57,12 @@ export default class TrimmehExtension extends Extension {
         };
 
         add('paste-trimmed-hotkey', () => {
-            log('Trimmeh: hotkey paste-trimmed fired');
             this.watcher?.pasteTrimmed().catch(logError);
         });
         add('paste-original-hotkey', () => {
-            log('Trimmeh: hotkey paste-original fired');
             this.watcher?.pasteOriginal().catch(logError);
         });
         add('toggle-auto-trim-hotkey', () => {
-            log('Trimmeh: hotkey toggle-auto-trim fired');
             const current = settings.get_boolean('enable-auto-trim');
             settings.set_boolean('enable-auto-trim', !current);
         });

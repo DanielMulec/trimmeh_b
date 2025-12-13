@@ -1,0 +1,84 @@
+[
+  {
+    "name": "already_flat",
+    "input": "echo hi",
+    "aggressiveness": "normal",
+    "expected": { "output": "echo hi", "changed": false }
+  },
+  {
+    "name": "backslash_merge",
+    "input": "python - <<'PY'\nprint(\"ok\")\\\n\nPY",
+    "aggressiveness": "normal",
+    "expected": { "output": "python - <<'PY' print(\"ok\") PY", "changed": true, "reason": "backslash_merged" }
+  },
+  {
+    "name": "prompt_strip_single",
+    "input": "$ sudo dnf install foo",
+    "aggressiveness": "normal",
+    "expected": { "output": "sudo dnf install foo", "changed": true, "reason": "prompt_stripped" }
+  },
+  {
+    "name": "box_gutter_strip",
+    "input": "│ sudo dnf upgrade && \n│ reboot",
+    "aggressiveness": "normal",
+    "expected": { "output": "sudo dnf upgrade && reboot", "changed": true, "reason": "box_chars_removed" }
+  },
+  {
+    "name": "oversize_skip",
+    "input": "line1\nline2\nline3",
+    "aggressiveness": "normal",
+    "options": { "max_lines": 2 },
+    "expected": { "output": "line1\nline2\nline3", "changed": false, "reason": "skipped_too_large" }
+  },
+  {
+    "name": "blank_lines_preserved",
+    "input": "echo first\necho second\n\necho third",
+    "aggressiveness": "high",
+    "options": { "keep_blank_lines": true },
+    "expected": { "output": "echo first echo second\n\necho third", "changed": true, "reason": "flattened" }
+  },
+  {
+    "name": "prompt_majority_stripped",
+    "input": "$ echo one\n$ echo two\n$ echo three",
+    "aggressiveness": "high",
+    "expected": { "output": "echo one echo two echo three", "changed": true, "reason": "prompt_stripped" }
+  },
+  {
+    "name": "prompt_not_stripped_when_toggle_off",
+    "input": "$ echo one\n$ echo two\n$ echo three",
+    "aggressiveness": "high",
+    "options": { "trim_prompts": false },
+    "expected": { "output": "$ echo one $ echo two $ echo three", "changed": true, "reason": "flattened" }
+  },
+  {
+    "name": "url_repair",
+    "input": "https://example.com/very\n/long/path",
+    "aggressiveness": "normal",
+    "expected": { "output": "https://example.com/very/long/path", "changed": true, "reason": "flattened" }
+  },
+  {
+    "name": "list_is_skipped",
+    "input": "- item one\n- item two\n- item three",
+    "aggressiveness": "normal",
+    "expected": { "output": "- item one\n- item two\n- item three", "changed": false }
+  },
+  {
+    "name": "low_aggressiveness_skips_simple_two_lines",
+    "input": "echo one\necho two",
+    "aggressiveness": "low",
+    "expected": { "output": "echo one\necho two", "changed": false }
+  },
+  {
+    "name": "normal_aggressiveness_trims_simple_two_lines",
+    "input": "echo one\necho two",
+    "aggressiveness": "normal",
+    "expected": { "output": "echo one echo two", "changed": true, "reason": "flattened" }
+  },
+  {
+    "name": "low_aggressiveness_trims_explicit_joiner",
+    "input": "echo one &&\n  echo two",
+    "aggressiveness": "low",
+    "expected": { "output": "echo one && echo two", "changed": true, "reason": "flattened" }
+  }
+]
+

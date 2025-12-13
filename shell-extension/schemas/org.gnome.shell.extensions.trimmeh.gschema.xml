@@ -36,12 +36,12 @@
 
     <!-- Global hotkeys (GNOME Shell keybindings). -->
     <key name="paste-trimmed-hotkey" type="as">
-      <default>['&lt;Super&gt;&lt;Alt&gt;t']</default>
+      <default>[]</default>
       <summary>Paste trimmed clipboard hotkey</summary>
       <description>Keybinding to paste a High-aggressiveness trimmed version once.</description>
     </key>
     <key name="paste-original-hotkey" type="as">
-      <default>['&lt;Super&gt;&lt;Alt&gt;&lt;Shift&gt;t']</default>
+      <default>[]</default>
       <summary>Paste original clipboard hotkey</summary>
       <description>Keybinding to paste the last untrimmed clipboard once.</description>
     </key>

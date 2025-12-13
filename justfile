@@ -20,18 +20,19 @@ build-wasm:
 bundle-extension:
 	npx esbuild shell-extension/src/extension.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=shell-extension/extension.js
 	npx esbuild shell-extension/src/clipboard.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=shell-extension/clipboard.js
-	npx esbuild shell-extension/src/wasm.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=shell-extension/wasm.js
+	npx esbuild shell-extension/src/trimmer.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=shell-extension/trimmer.js
 	npx esbuild shell-extension/src/prefs.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=shell-extension/prefs.js
-	cp shell-extension/metadata.json shell-extension/stylesheet.css shell-extension/wasm/trimmeh_core_bg.wasm shell-extension/wasm/trimmeh_core.js shell-extension/ 2>/dev/null || true
+	cp shell-extension/metadata.json shell-extension/stylesheet.css shell-extension/ 2>/dev/null || true
 	glib-compile-schemas shell-extension/schemas
 
 # Bundle the GI-light clipboard watcher core for standalone gjs tests.
 bundle-tests:
 	mkdir -p tests/dist
 	npx esbuild shell-extension/src/clipboardWatcher.ts --bundle --format=esm --platform=browser --external:gi://* --external:resource://* --outfile=tests/dist/clipboardWatcher.js
+	npx esbuild trimmeh-core-js/src/index.ts --bundle --format=esm --platform=browser --outfile=tests/dist/trimCore.js
 
 # Install extension locally (Wayland session)
-install-extension: build-wasm bundle-extension
+install-extension: bundle-extension
 	mkdir -p "${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/trimmeh@trimmeh.dev"
 	cp -r shell-extension/* "${XDG_DATA_HOME:-$HOME/.local/share}/gnome-shell/extensions/trimmeh@trimmeh.dev/"
 	gnome-extensions disable trimmeh@trimmeh.dev 2>/dev/null || true
@@ -53,5 +54,8 @@ rpm:
 		--define "__os_install_post %{nil}"
 
 # Build a zip suitable for extensions.gnome.org or manual install
-extension-zip: build-wasm bundle-extension
-	cd shell-extension && zip -r ../trimmeh-extension.zip . -x "node_modules/*"
+extension-zip: bundle-extension
+	rm -f trimmeh-extension.zip
+	cd shell-extension && zip -r ../trimmeh-extension.zip \
+		metadata.json extension.js prefs.js stylesheet.css LICENSE \
+		schemas/org.gnome.shell.extensions.trimmeh.gschema.xml schemas/gschemas.compiled

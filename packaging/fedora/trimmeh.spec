@@ -10,7 +10,6 @@ Source0:        %{name}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires:  cargo
 BuildRequires:  rust
-BuildRequires:  /usr/bin/wasm-bindgen
 BuildRequires:  glib2-devel
 BuildRequires:  gobject-introspection
 BuildRequires:  gnome-shell
@@ -26,7 +25,6 @@ Trims multi-line shell snippets on the clipboard into single-line commands for G
 %autosetup -n %{name}-%{version}
 
 %build
-just build-wasm
 just bundle-extension
 
 %install

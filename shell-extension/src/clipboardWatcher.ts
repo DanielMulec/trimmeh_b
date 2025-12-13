@@ -1,5 +1,5 @@
 import GLib from 'gi://GLib';
-import type {TrimOptions, Trimmer} from './wasm.js';
+import type {TrimOptions, Trimmer} from './trimmer.js';
 
 export interface SettingsLike {
     get_boolean(key: string): boolean;

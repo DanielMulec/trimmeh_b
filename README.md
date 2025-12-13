@@ -14,7 +14,7 @@ Trimmeh is the South-Parkian cousin of [Trimmy](https://github.com/steipete/Trim
 - No X11. No telemetry. No network calls.
 
 ## Install options
-- **Local dev install:** `just install-extension` (build wasm, bundle JS, compile schemas, install to `~/.local/share/gnome-shell/extensions/trimmeh@trimmeh.dev/`).
+- **Local dev install:** `just install-extension` (bundle JS, compile schemas, install to `~/.local/share/gnome-shell/extensions/trimmeh@trimmeh.dev/`).
 - **Extension zip (for extensions.gnome.org or manual):** `just extension-zip` → `trimmeh-extension.zip`.
 - **RPM (Fedora 43+):** `just rpm` → `.rpmbuild/RPMS/noarch/gnome-shell-extension-trimmeh-<ver>.rpm`.
 - **CLI:** `cargo build -p trimmeh-cli --release` (optionally package as subpackage in RPM).
@@ -22,7 +22,7 @@ Trimmeh is the South-Parkian cousin of [Trimmy](https://github.com/steipete/Trim
 ## Using it
 - Enable the extension (GNOME Extensions app or `gnome-extensions enable trimmeh@trimmeh.dev`).
 - Top-bar menu: Last preview, Auto-trim toggle, Paste Trimmed, Paste Original, Restore last copy, Preferences.
-- Global hotkeys (defaults): Paste Trimmed = `<Super><Alt>t`, Paste Original = `<Super><Alt><Shift>t`. Rebind them in Trimmeh Preferences (Hotkeys section) or via GSettings.
+- Global hotkeys: disabled by default for EGO compliance. Set them in Trimmeh Preferences (Hotkeys section) or via GSettings.
   - Inspect: `gsettings get org.gnome.shell.extensions.trimmeh paste-trimmed-hotkey`
   - Set (example): `gsettings set org.gnome.shell.extensions.trimmeh paste-trimmed-hotkey "['<Super><Alt>y']"` and `gsettings set org.gnome.shell.extensions.trimmeh paste-original-hotkey "['<Super><Alt><Shift>y']"`
 - Manual paste is injected via GNOME Shell’s compositor virtual keyboard (prefers Shift+Insert, falls back to Ctrl+V). Trimmeh waits briefly for hotkey modifiers (Super/Alt/Shift) to be released before injecting paste (Wayland-friendly, best-effort).
@@ -37,11 +37,10 @@ Trimmeh is the South-Parkian cousin of [Trimmy](https://github.com/steipete/Trim
   - Unchanged exit code = 2 (matches Trimmy).
 
 ## Build from source
-Prereqs: Rust stable (1.91+), `wasm32-unknown-unknown` target, `wasm-bindgen` on PATH, Node+`npx` with `esbuild`, GNOME Shell headers/libs.
+Prereqs: Rust stable (1.91+) for the CLI, Node+`npx` with `esbuild` for the extension, GNOME Shell headers/libs.
 
 Common tasks (from repo root):
 - `just build-core` — native core
-- `just build-wasm` — wasm artifact
 - `just bundle-extension` — bundle TS → JS & schemas
 - `just install-extension` — dev install + schemas
 - `just extension-zip` — release zip

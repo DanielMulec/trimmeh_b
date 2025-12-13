@@ -571,6 +571,7 @@ pub fn trim_js(input: &str, aggressiveness: u8, opts: JsValue) -> JsValue {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use serde::Deserialize;
 
     #[test]
     fn backslash_merge() {
@@ -663,5 +664,87 @@ mod tests {
         let res = trim(input, Aggressiveness::Normal, Options::default());
         assert_eq!(res.output, input);
         assert!(!res.changed);
+    }
+
+    #[test]
+    fn vectors_match_expected() {
+        #[derive(Debug, Deserialize)]
+        struct Vector {
+            name: String,
+            input: String,
+            aggressiveness: String,
+            #[serde(default)]
+            options: Option<VectorOptions>,
+            expected: Expected,
+        }
+
+        #[derive(Debug, Deserialize)]
+        struct VectorOptions {
+            keep_blank_lines: Option<bool>,
+            strip_box_chars: Option<bool>,
+            trim_prompts: Option<bool>,
+            max_lines: Option<usize>,
+        }
+
+        #[derive(Debug, Deserialize)]
+        struct Expected {
+            output: String,
+            changed: bool,
+            #[serde(default)]
+            reason: Option<String>,
+        }
+
+        fn parse_aggr(s: &str) -> Aggressiveness {
+            match s {
+                "low" => Aggressiveness::Low,
+                "high" => Aggressiveness::High,
+                _ => Aggressiveness::Normal,
+            }
+        }
+
+        fn reason_key(reason: Option<TrimReason>) -> Option<&'static str> {
+            match reason {
+                None => None,
+                Some(TrimReason::Flattened) => Some("flattened"),
+                Some(TrimReason::PromptStripped) => Some("prompt_stripped"),
+                Some(TrimReason::BoxCharsRemoved) => Some("box_chars_removed"),
+                Some(TrimReason::BackslashMerged) => Some("backslash_merged"),
+                Some(TrimReason::SkippedTooLarge) => Some("skipped_too_large"),
+            }
+        }
+
+        let json = include_str!("../../tests/trim-vectors.json");
+        let vectors: Vec<Vector> = serde_json::from_str(json).expect("parse trim vectors");
+
+        for v in vectors {
+            let mut opts = Options::default();
+            if let Some(o) = v.options {
+                if let Some(val) = o.keep_blank_lines {
+                    opts.keep_blank_lines = val;
+                }
+                if let Some(val) = o.strip_box_chars {
+                    opts.strip_box_chars = val;
+                }
+                if let Some(val) = o.trim_prompts {
+                    opts.trim_prompts = val;
+                }
+                if let Some(val) = o.max_lines {
+                    opts.max_lines = val;
+                }
+            }
+
+            let res = trim(&v.input, parse_aggr(&v.aggressiveness), opts);
+            assert_eq!(res.output, v.expected.output, "vector {} output", v.name);
+            assert_eq!(res.changed, v.expected.changed, "vector {} changed", v.name);
+
+            if let Some(expected_reason) = v.expected.reason.as_deref() {
+                assert_eq!(
+                    reason_key(res.reason),
+                    Some(expected_reason),
+                    "vector {} reason",
+                    v.name
+                );
+            }
+        }
     }
 }

@@ -1,7 +1,7 @@
 {
   "uuid": "trimmeh@trimmeh.dev",
   "name": "Trimmeh",
-  "description": "Auto-flattens shell snippets on the clipboard (GNOME 49+)",
+  "description": "Watches the clipboard and flattens multi-line shell commands into a single runnable line (local only; no network).",
   "shell-version": ["49", "48"],
   "settings-schema": "org.gnome.shell.extensions.trimmeh",
   "version": 1

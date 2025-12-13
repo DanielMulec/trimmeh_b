@@ -92,11 +92,6 @@ export async function pasteWithFallback(): Promise<void> {
     if (timedOut) {
         const mods = currentModifierMask();
         log(`Trimmeh: paste injection timed out waiting for modifiers; mods=${mods}`);
-    } else {
-        const waitedMs = Math.round((GLib.get_monotonic_time() - startUsec) / 1000);
-        if (waitedMs >= 25) {
-            log(`Trimmeh: paste injection delayed ${waitedMs}ms (waiting for modifiers)`);
-        }
     }
 
     try {
