@@ -89,7 +89,7 @@ A **plasmoid can still exist** as an optional UI surface, but it should not be t
 
 ---
 
-## Proposed architecture (recommended): Tray app + optional KWin script
+## Proposed architecture (recommended): Tray app + optional KWin helper for paste
 
 ### Summary
 Build an always-on **KDE tray app** (Qt 6 + KF6) that:
@@ -99,7 +99,7 @@ Build an always-on **KDE tray app** (Qt 6 + KF6) that:
 - provides a tray menu + settings UI,
 - registers global shortcuts (Paste Trimmed / Paste Original / Toggle Auto-Trim).
 
-Add an optional **KWin script** only if we need compositor-side capabilities (most likely: best-effort paste injection on Wayland).
+Add an optional **KWin helper** only if we need compositor-side capabilities (most likely: best-effort paste injection on Wayland).
 
 ### Components
 
@@ -117,9 +117,7 @@ Add an optional **KWin script** only if we need compositor-side capabilities (mo
 3. **Optional: `trimmeh-kde-kwin` (new, KWin script)**
    - Best-effort paste injection helper (Wayland): triggers “paste now” in the focused app.
    - Called by `trimmeh-kde` over DBus when handling Paste Trimmed/Original actions.
-
-4. **Optional: `trimmeh-plasma` (new, plasmoid UI)**
-   - Optional widget UI that talks to `trimmeh-kde` via DBus (nice-to-have; not required for parity).
+   - Not needed for hotkeys or clipboard; only for paste injection if a normal client app can’t do it.
 
 ---
 
@@ -144,22 +142,15 @@ Add an optional **KWin script** only if we need compositor-side capabilities (mo
   - Prefer a “library-style” JS file with `function trimmehTrim(...) { ... }`.
 
 ### Hotkeys
-Decision checkpoint (tied to distribution):
+Implement hotkeys in the tray app via **KF6::GlobalAccel** (KGlobalAccel).
 
-- **If we want “KDE Store-first”** (no compilation):
-  - Preferred: ship a **KWin script** that registers global shortcuts via `registerShortcut(...)` and calls Trimmeh actions over DBus.
-  - Shortcuts can still be user-configurable; UI-wise, we can either:
-    - guide users to KDE’s global shortcuts UI (most robust), or
-    - provide an in-plasmoid capture UI that writes config consumed by the KWin script (more work).
-
-- **If we’re okay with shipping binaries** (RPM/Flatpak/etc):
-  - Preferred: tray app uses **KF6::GlobalAccel** (KGlobalAccel) and exposes the same actions.
+Note for future Flatpak work: there is an xdg-desktop-portal “GlobalShortcuts” portal that can replace KGlobalAccel in sandboxed environments, but it’s not required for the native app path.
 
 ---
 
-## If we tried the “plasmoid + KWin script” route (what installation would look like)
+## Rejected (for now): “plasmoid + KWin script” route
 
-This is the “all-script, KDE Store-friendly” idea. It is feasible, but it’s inherently more moving parts than a tray app.
+This is the “all-script, KDE Store-friendly” idea. We’re not choosing it because parity requires always-on behavior and clean hotkey UX, which is simpler as a tray app.
 
 What it would likely look like for users:
 
@@ -174,6 +165,8 @@ Key caveat: KDE’s tooling treats widgets and KWin scripts as separate installa
 Decision checkpoint after Spike C (below):
 - Preferred: implement best-effort paste injection via **KWin script** (Wayland, compositor-side).
 - Fallback: “Copy Trimmed” + a passive notification/toast “Now paste manually (Ctrl+V)” if injection is not feasible.
+
+Important learning point: on **Wayland**, a normal application generally **cannot** send synthetic keystrokes to other apps (by design). GNOME Trimmeh can because it runs inside the compositor (`gnome-shell`). On KDE, we may need compositor-side help (KWin) to get “Paste Trimmed/Original” parity.
 
 ---
 
