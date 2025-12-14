@@ -47,7 +47,7 @@ Common tasks (from repo root):
 - `just rpm` — build RPM (workspace-local buildroot)
 
 ## Release checklist
-- Bump version in `Cargo.toml`/`metadata.json` and tags.
+- Bump version in `Cargo.toml` (CLI/core) and tags (EGO manages extension versions; avoid setting `metadata.json` `version`).
 - `cargo test -p trimmeh-core`
 - `just extension-zip` (for EGO upload)
 - `just rpm` (for Fedora/COPR)

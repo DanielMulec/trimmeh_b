@@ -2,7 +2,7 @@
   "uuid": "trimmeh@trimmeh.dev",
   "name": "Trimmeh",
   "description": "Watches the clipboard and flattens multi-line shell commands into a single runnable line (local only; no network).",
+  "url": "https://github.com/DanielMulec/trimmeh_b",
   "shell-version": ["49", "48"],
-  "settings-schema": "org.gnome.shell.extensions.trimmeh",
-  "version": 1
+  "settings-schema": "org.gnome.shell.extensions.trimmeh"
 }
