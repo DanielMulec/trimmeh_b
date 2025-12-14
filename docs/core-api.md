@@ -1,6 +1,6 @@
-# trimmeh-core API (Rust + Wasm)
+# trimmeh-core API (Rust) + shared JS core
 
-Target stack is current as of Dec 7, 2025: Rust 1.91.0 (Edition 2024), wasm-bindgen compatible with gjs in GNOME 49.
+Target stack is current as of Dec 7, 2025: Rust 1.91.0 (Edition 2024), GNOME 49 runtime (GJS).
 
 ## Public surface
 - Crate: `trimmeh_core`
@@ -29,6 +29,10 @@ Target stack is current as of Dec 7, 2025: Rust 1.91.0 (Edition 2024), wasm-bind
 - Low = fewer prompt patterns; High = more aggressive prompt/box stripping and whitespace collapsing (e.g., removes Markdown bullet prefixes like `- $ command`).
 
 ## Test vectors (goldens)
+Canonical vectors live in `tests/trim-vectors.json` and are used by both:
+- Rust test in `trimmeh-core` (prevents regression/drift)
+- GJS test runner for the JS core
+
 - **Backslash merge**  
   In: `python - <<'PY'\nprint(\"ok\")\\\n\nPY`  
   Out: `python - <<'PY' print("ok") PY`
@@ -41,13 +45,12 @@ Target stack is current as of Dec 7, 2025: Rust 1.91.0 (Edition 2024), wasm-bind
 - **Oversize skip**  
   20-line blob → unchanged with `reason=SkippedTooLarge`
 
-## Wasm build contract
-- `wasm-bindgen --target no-modules --weak-refs --reference-types` (keeps output loadable by gjs without ESM).
-- Expose `trim` via `#[wasm_bindgen] pub fn trim_js(input: &str, aggressiveness: u8, opts: JsValue) -> JsValue`.
-- Output file name: `libtrimmeh_core.wasm`; accompanying JS shim kept minimal and bundle-free.
-- Deterministic builds: `RUSTFLAGS="-C panic=abort -Zremap-path-prefix=."` and `wasm-opt -Oz` if available.
+## Shared JS core
+The GNOME extension uses a runtime-agnostic JS/TS core (no `.wasm`) so it can be reviewed easily for EGO and reused for a future KDE/Plasma (QML/JS) port:
+- Source: `trimmeh-core-js/src/index.ts`
+- Extension adapter: `shell-extension/src/trimmer.ts`
 
 ## CLI expectations
 - `trimmeh-cli trim` reads stdin → stdout.
 - `trimmeh-cli diff` prints before/after with unified diff for debugging.
-- Same code path as wasm to avoid drift.
+- Shares vectors with the JS core to avoid drift.
