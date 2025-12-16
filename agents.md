@@ -4,31 +4,32 @@ Use this as a lightweight RACI so we can parallelize the build. All agents work 
 
 ## Validation & currency rules
 - Always validate any solution design against the official developer documentation first (GNOME, gjs, GTK, xdg-desktop-portal, Rust, etc.). If that is insufficient, run additional fresh web searches before implementation.
-- Keep the stack current as of December 7, 2025: Rust stable 1.91.0 (Edition 2024) or newer, GNOME 49 runtime (gjs/GTK from Fedora 43), latest `wasm-bindgen` compatible with that toolchain. Re-evaluate versions quarterly.
+- Keep the stack current as of December 7, 2025: Rust stable 1.91.0 (Edition 2024) or newer (core + CLI), GNOME 49 runtime (gjs/GTK from Fedora 43) for the extension, and Node+npx (`esbuild`) for bundling TypeScript into readable ESM JavaScript for EGO. Re-evaluate versions quarterly.
 
 ## 1) Research Agent
 - Tracks upstream changes in GNOME Shell, xdg-desktop-portal, and Fedora packaging that affect clipboard access.
 - Maintains a “compat matrix” note for GNOME 48/49, Wayland-only.
 - Feeds breaking-change alerts to Core & Shell agents.
 
-## 2) Core Agent (Rust + Wasm)
+## 2) Core Agent (Rust + shared TS/JS core)
 - Owns `trimmeh-core` crate: parsing, prompt stripping, box-gutter removal, blank-line handling, aggressiveness levels.
+- Owns `trimmeh-core-js` shared trimming core used by the GNOME extension (runtime-agnostic TS/JS; pure string + RegExp).
+- Keeps Rust + TS/JS behavior in lockstep via `tests/trim-vectors.json` (avoid drift between CLI and extension).
 - Exposes a pure function `trim(input: &str, Aggressiveness, Options) -> TrimResult`.
-- Produces `libtrimmeh_core.wasm` via `wasm-bindgen --target no-modules` suitable for gjs.
 - CLI contract: `trimmeh-cli trim < file` and `trimmeh-cli diff` (shows before/after).
 - Tests: unit + property tests; add fuzz targets via `cargo fuzz` for edge cases.
 
 ## 3) Shell Agent (GNOME extension)
-- Implements `trimmeh-shell` extension in GJS/TypeScript.
-- Hooks `St.Clipboard` owner-change for CLIPBOARD and PRIMARY selections; skips binary/HTML targets.
-- Loads wasm from extension dir, invokes core trim; hashes payloads to avoid loops; caches original for “Restore previous copy”.
+- Implements the GNOME Shell extension in GJS/TypeScript (`shell-extension/`).
+- Hooks `St.Clipboard` owner-change for CLIPBOARD and PRIMARY selections; reads plain text via `get_text()` and ignores empty/non-text.
+- Invokes the shared TS/JS trimming core (via `shell-extension/src/trimmer.ts` → `trimmeh-core-js`); hashes payloads to avoid loops; caches original for “Restore previous copy”.
 - Preferences UI: GTK4/libadwaita; toggles map to GSettings keys documented in README.
 - Logging via `log()` to journal; no network calls.
 
 ## 4) Integration Agent
-- Writes `justfile` tasks: `just build-core`, `just build-wasm`, `just bundle-extension`, `just rpm`.
-- Ensures wasm + JS bundling paths are correct inside the extension UUID dir.
-- Sets up `scripts/dev-shell.sh` to install/uninstall the extension for GNOME 49 session and restart `gnome-shell --replace` safely.
+- Writes and maintains `justfile` tasks: `just build-core`, `just build-cli`, `just bundle-extension`, `just bundle-tests`, `just install-extension`, `just extension-zip`, `just rpm`.
+- Ensures bundling paths are correct (extension includes the shared `trimmeh-core-js` logic; EGO zip ships only JS + schemas, no extra build inputs).
+- Maintains lightweight smoke checks (e.g. `gjs -m tests/clipboard.test.js`) and documents the GNOME 49 Wayland dev loop (install → enable/disable → log out/in if needed).
 
 ## 5) Packaging Agent
 - Crafts Fedora 43 RPM spec (`packaging/fedora/trimmeh.spec`), including:
@@ -51,6 +52,6 @@ Use this as a lightweight RACI so we can parallelize the build. All agents work 
 - Open short issues for cross-agent blockers; avoid large PRs.
 - If a change risks touching clipboard semantics or GNOME 48/49 compatibility, loop in Research + QA before merging.
 - Do not modify files outside the repository workspace (e.g., installed copies under `~/.local/share/gnome-shell/extensions/`); fix sources in-repo and provide installation steps instead.
-- Never edit generated/compiled artifacts (e.g., `extension.js`, bundled JS/wasm) directly. Update source files, rebuild, and commit only the source plus intended build outputs when the release process calls for them.
+- Never edit generated/compiled artifacts (e.g., `shell-extension/extension.js`, `shell-extension/prefs.js`, `tests/dist/*`, `shell-extension/schemas/gschemas.compiled`) directly. Update source files, rebuild, and commit only the source plus intended build outputs when the release process calls for them.
 - Before implementing a feature or test, first check whether equivalent logic or coverage already exists in the codebase to avoid duplicating functionality or effort.
 - In GJS code, avoid importing `resource:///org/gnome/gjs/modules/byteArray.js`; use `TextDecoder` or other standard APIs instead.
