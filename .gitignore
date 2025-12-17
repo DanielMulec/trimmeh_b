@@ -15,3 +15,5 @@ shell-extension/schemas/gschemas.compiled
 tests/dist/
 upstream/
 gnome-shell-extension-trimmeh-*.tar.gz
+build-kde/
+trimmeh-kde/build/
