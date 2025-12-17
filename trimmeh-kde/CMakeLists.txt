@@ -31,7 +31,7 @@ add_custom_command(
             --global-name=TrimmehCore
             --platform=neutral
             --target=es2020
-            --outfile="${TRIMMEH_CORE_JS_BUNDLE}"
+            "--outfile=${TRIMMEH_CORE_JS_BUNDLE}"
     DEPENDS "${TRIMMEH_CORE_JS_SRC}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_SOURCE_DIR}/.."
     COMMENT "Bundling trimmeh-core-js for QJSEngine"
