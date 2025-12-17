@@ -9,7 +9,16 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 find_program(NPX_EXECUTABLE npx REQUIRED)
 
 find_package(Qt6 REQUIRED COMPONENTS Core Gui Widgets Qml)
-find_package(KF6 REQUIRED COMPONENTS StatusNotifierItem Config)
+
+# KDE Frameworks 6:
+# - Some environments provide a meta "KF6" package with COMPONENTS (as referenced by KDE API docs).
+# - Fedora packages typically provide per-framework CMake packages (e.g. KF6Config, KF6StatusNotifierItem)
+#   and do *not* ship a KF6Config.cmake meta-package.
+find_package(KF6 QUIET COMPONENTS StatusNotifierItem Config)
+if (NOT KF6_FOUND)
+    find_package(KF6StatusNotifierItem REQUIRED)
+    find_package(KF6Config REQUIRED)
+endif()
 
 set(TRIMMEH_CORE_JS_SRC "${CMAKE_CURRENT_SOURCE_DIR}/../trimmeh-core-js/src/index.ts")
 set(TRIMMEH_CORE_JS_BUNDLE "${CMAKE_CURRENT_BINARY_DIR}/trimmehCore.bundle.js")

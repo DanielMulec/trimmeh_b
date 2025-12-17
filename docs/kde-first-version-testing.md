@@ -38,6 +38,33 @@ Sanity check:
 command -v just cmake npx
 ```
 
+### Troubleshooting build issues
+
+#### CMake can’t find Qt6
+
+If you see an error mentioning `Qt6Config.cmake` / `qt6-config.cmake`, install Qt6 dev packages:
+
+```sh
+sudo dnf install qt6-qtbase-devel qt6-qtdeclarative-devel
+```
+
+#### CMake can’t find “KF6”
+
+Fedora packages KDE Frameworks 6 as **per-framework** CMake packages (e.g. `KF6Config`, `KF6StatusNotifierItem`), not necessarily a single `KF6Config.cmake`.
+
+Install the dev packages:
+
+```sh
+sudo dnf install extra-cmake-modules kf6-kstatusnotifieritem-devel kf6-kconfig-devel
+```
+
+If you still see an error mentioning `KF6Config.cmake` / `kf6-config.cmake`, wipe the build directory (stale CMake cache) and retry:
+
+```sh
+rm -rf build-kde
+just kde-run
+```
+
 ### 1) Run the vector parity check (recommended first)
 
 This runs `tests/trim-vectors.json` through the embedded JS engine used by the KDE app.
