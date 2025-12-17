@@ -40,12 +40,6 @@ add_custom_command(
 
 set_source_files_properties("${TRIMMEH_CORE_JS_BUNDLE}" PROPERTIES GENERATED TRUE)
 
-qt_add_resources(TRIMMEH_KDE_RESOURCES
-    PREFIX "/"
-    FILES
-        "${TRIMMEH_CORE_JS_BUNDLE}"
-)
-
 qt_add_executable(trimmeh-kde
     src/main.cpp
     src/trimmeh_app.cpp
@@ -58,7 +52,13 @@ qt_add_executable(trimmeh-kde
     src/trimmeh_settings.h
     src/trimmeh_vectors_check.cpp
     src/trimmeh_vectors_check.h
-    ${TRIMMEH_KDE_RESOURCES}
+)
+
+qt_add_resources(trimmeh-kde "trimmeh-core-js"
+    PREFIX "/"
+    BASE "${CMAKE_CURRENT_BINARY_DIR}"
+    FILES
+        "${TRIMMEH_CORE_JS_BUNDLE}"
 )
 
 target_link_libraries(trimmeh-kde PRIVATE
