@@ -1,8 +1,6 @@
 #include "trimmeh_app.h"
 
 #include <QAction>
-#include <QApplication>
-#include <QIcon>
 #include <QSignalBlocker>
 
 namespace {
@@ -109,11 +107,6 @@ void TrimmehApp::rebuildMenu() {
 
     m_restoreLastCopyAction = m_menu->addAction(QStringLiteral("Restore last copy"));
     connect(m_restoreLastCopyAction, &QAction::triggered, &m_watcher, &TrimmehClipboardWatcher::restoreLastCopy);
-
-    makeSeparatorAction(m_menu);
-
-    QAction* quitAction = m_menu->addAction(QStringLiteral("Quit"));
-    connect(quitAction, &QAction::triggered, qApp, &QCoreApplication::quit);
 }
 
 void TrimmehApp::syncMenuStateFromSettings() {
