@@ -31,3 +31,7 @@ Vector parity check (runs `tests/trim-vectors.json` through the embedded JS engi
 Notes:
 - The trimming logic is reused from `trimmeh-core-js` and is bundled during the build.
 - “Paste Trimmed/Original” currently swaps the clipboard briefly; reliable Wayland paste injection is planned via `xdg-desktop-portal` RemoteDesktop.
+
+## Testing
+
+See `trimmeh-kde/TESTING.md`.
