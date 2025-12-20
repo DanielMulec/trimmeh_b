@@ -26,7 +26,7 @@ TrimmehApp::TrimmehApp(QObject* parent)
     m_tray->setToolTipTitle(QStringLiteral("Trimmeh"));
     m_tray->setToolTipSubTitle(QStringLiteral("Clipboard trimmer for Plasma 6"));
 
-    m_menu = new QMenu(m_tray);
+    m_menu = new QMenu();
     m_tray->setContextMenu(m_menu);
 
     connect(&m_watcher, &TrimmehClipboardWatcher::lastSummaryChanged, this, &TrimmehApp::updateLastSummary);

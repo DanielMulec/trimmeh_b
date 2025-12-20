@@ -100,6 +100,12 @@ If you don’t see the tray icon:
 - Ensure Plasma’s “System Tray” widget is present in your panel.
 - Ensure it shows “Status Notifier Items”.
 
+Note:
+- `just kde-run` runs the app in the foreground, so the terminal won’t return to a prompt until you exit.
+  - Exit cleanly via the tray menu → `Quit`, or stop it from the launching terminal with `Ctrl+C`.
+  - If you want your terminal back while it keeps running, launch in the background:
+    `./build-kde/trimmeh-kde &` (or `nohup ./build-kde/trimmeh-kde >/tmp/trimmeh-kde.log 2>&1 &`).
+
 ## Test checklist (manual behavioral tests)
 
 You can do these tests with any app you can copy/paste in (Kate, KWrite, Konsole, etc).
