@@ -25,6 +25,9 @@ TrimmehApp::TrimmehApp(QObject* parent)
     m_tray->setTitle(QStringLiteral("Trimmeh"));
     m_tray->setToolTipTitle(QStringLiteral("Trimmeh"));
     m_tray->setToolTipSubTitle(QStringLiteral("Clipboard trimmer for Plasma 6"));
+    // Plasma's System Tray "Shown when relevant" policy typically hides Passive items.
+    // Mark the app as Active so it surfaces in the compact tray by default.
+    m_tray->setStatus(KStatusNotifierItem::Active);
 
     m_menu = new QMenu();
     m_tray->setContextMenu(m_menu);
