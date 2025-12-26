@@ -11,7 +11,7 @@ set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core DBus Qml Widgets)
-find_package(KF6 REQUIRED COMPONENTS StatusNotifierItem)
+find_package(KF6StatusNotifierItem REQUIRED)
 
 find_program(NPX npx)
 if (NOT NPX)
