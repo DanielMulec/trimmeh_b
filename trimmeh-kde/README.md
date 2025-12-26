@@ -18,3 +18,5 @@ cmake --build build-kde
 Flags:
 - `--once` prints the current clipboard once and exits.
 - `--no-initial` skips the initial clipboard print and only logs signals.
+- `--set <text>` sets the clipboard via Klipper and exits.
+- `--set-stdin` reads stdin and sets the clipboard via Klipper, then exits.

@@ -7,6 +7,7 @@
 #include <QDBusInterface>
 #include <QDBusReply>
 #include <QDebug>
+#include <QTextStream>
 
 namespace {
 constexpr const char kService[] = "org.kde.klipper";
@@ -14,6 +15,7 @@ constexpr const char kPath[] = "/klipper";
 constexpr const char kInterface[] = "org.kde.klipper.klipper";
 constexpr const char kSignal[] = "clipboardHistoryUpdated";
 constexpr const char kMethodGet[] = "getClipboardContents";
+constexpr const char kMethodSet[] = "setClipboardContents";
 }
 
 class KlipperProbe final : public QObject {
@@ -34,6 +36,16 @@ public:
 
     QDBusError lastError() const {
         return m_iface.lastError();
+    }
+
+    bool setClipboard(const QString &text) {
+        QDBusReply<void> reply = m_iface.call(QString::fromLatin1(kMethodSet), text);
+        if (!reply.isValid()) {
+            qWarning() << "[klipper] setClipboardContents failed:" << reply.error().name()
+                       << reply.error().message();
+            return false;
+        }
+        return true;
     }
 
     void printClipboard(const char *reason) {
@@ -76,7 +88,18 @@ int main(int argc, char **argv) {
     QCommandLineOption noInitialOpt("no-initial", "Do not print initial clipboard.");
     parser.addOption(noInitialOpt);
 
+    QCommandLineOption setOpt("set", "Set clipboard via Klipper and exit.", "text");
+    parser.addOption(setOpt);
+
+    QCommandLineOption setStdinOpt("set-stdin", "Read stdin and set clipboard via Klipper, then exit.");
+    parser.addOption(setStdinOpt);
+
     parser.process(app);
+
+    if (parser.isSet(setOpt) && parser.isSet(setStdinOpt)) {
+        qCritical() << "[klipper] Use only one of --set or --set-stdin.";
+        return 1;
+    }
 
     QDBusConnection bus = QDBusConnection::sessionBus();
     if (!bus.isConnected()) {
@@ -101,6 +124,22 @@ int main(int argc, char **argv) {
         const QDBusError err = probe.lastError();
         qCritical() << "[klipper] Interface invalid:" << err.name() << err.message();
         return 4;
+    }
+
+    if (parser.isSet(setOpt) || parser.isSet(setStdinOpt)) {
+        QString text;
+        if (parser.isSet(setOpt)) {
+            text = parser.value(setOpt);
+        } else {
+            QTextStream in(stdin, QIODevice::ReadOnly);
+            text = in.readAll();
+        }
+
+        if (!probe.setClipboard(text)) {
+            return 6;
+        }
+        probe.printClipboard("after-set");
+        return 0;
     }
 
     if (!parser.isSet(noInitialOpt)) {
