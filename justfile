@@ -59,3 +59,13 @@ extension-zip: bundle-extension
 	cd shell-extension && zip -r ../trimmeh-extension.zip \
 		metadata.json extension.js prefs.js stylesheet.css LICENSE \
 		schemas/org.gnome.shell.extensions.trimmeh.gschema.xml schemas/gschemas.compiled
+
+# KDE/Plasma 6 (Klipper DBus probe)
+kde-probe-configure:
+	cmake -S trimmeh-kde -B build-kde -DCMAKE_BUILD_TYPE=Debug
+
+kde-probe-build: kde-probe-configure
+	cmake --build build-kde
+
+kde-probe-run: kde-probe-build
+	./build-kde/trimmeh-kde-probe
