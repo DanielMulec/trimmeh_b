@@ -7,6 +7,7 @@
 #include <QDBusInterface>
 #include <QDBusReply>
 #include <QDebug>
+#include <QIODevice>
 #include <QTextStream>
 
 namespace {
