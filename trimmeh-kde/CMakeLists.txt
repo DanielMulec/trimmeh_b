@@ -17,12 +17,12 @@ if (NOT NPX)
     message(FATAL_ERROR "npx not found. Install Node.js (with npm/npx) to bundle trimmeh-core-js.")
 endif()
 
-set(CORE_TS "${CMAKE_CURRENT_LIST_DIR}/../trimmeh-core-js/src/index.ts")
+set(CORE_TS "${CMAKE_CURRENT_LIST_DIR}/../trimmeh-core-js/src/kde-entry.ts")
 set(CORE_JS "${CMAKE_CURRENT_BINARY_DIR}/trimmeh-core.js")
 
 add_custom_command(
     OUTPUT "${CORE_JS}"
-    COMMAND "${NPX}" esbuild "${CORE_TS}" --bundle --format=iife --platform=neutral --global-name=TrimmehCore --outfile="${CORE_JS}"
+    COMMAND "${NPX}" esbuild "${CORE_TS}" --bundle --format=iife --platform=neutral --outfile="${CORE_JS}"
     DEPENDS "${CORE_TS}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/.."
     COMMENT "Bundling trimmeh-core-js for KDE"
