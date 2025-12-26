@@ -79,7 +79,7 @@ int main(int argc, char **argv) {
 
     parser.process(app);
 
-    const QDBusConnection bus = QDBusConnection::sessionBus();
+    QDBusConnection bus = QDBusConnection::sessionBus();
     if (!bus.isConnected()) {
         qCritical() << "[klipper] Failed to connect to session bus:" << bus.lastError().message();
         return 2;
