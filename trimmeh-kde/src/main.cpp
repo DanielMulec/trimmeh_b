@@ -45,11 +45,10 @@ public:
         }
         const QString text = reply.value();
         const QString ts = QDateTime::currentDateTime().toString(Qt::ISODate);
-        if (reason) {
-            qInfo().noquote() << ts << "-" << reason << "-" << text;
-        } else {
-            qInfo().noquote() << ts << "-" << text;
-        }
+        const QString tag = reason ? QString::fromLatin1(reason) : QStringLiteral("clipboard");
+        qInfo().noquote() << ts << "-" << tag << "-BEGIN";
+        qInfo().noquote() << text;
+        qInfo().noquote() << ts << "-" << tag << "-END";
     }
 
 public slots:
