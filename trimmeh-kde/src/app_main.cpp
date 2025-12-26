@@ -1,9 +1,10 @@
 #include "clipboard_watcher.h"
 #include "klipper_bridge.h"
 #include "settings.h"
+#include "tray_app.h"
 #include "trim_core.h"
 
-#include <QCoreApplication>
+#include <QApplication>
 #include <QCommandLineParser>
 #include <QDebug>
 #include <QDir>
@@ -11,15 +12,16 @@
 
 namespace {
 QString coreBundlePath() {
-    const QString appDir = QCoreApplication::applicationDirPath();
+    const QString appDir = QApplication::applicationDirPath();
     return QDir(appDir).filePath(QStringLiteral("trimmeh-core.js"));
 }
 }
 
 int main(int argc, char **argv) {
-    QCoreApplication app(argc, argv);
-    QCoreApplication::setApplicationName("trimmeh-kde");
-    QCoreApplication::setApplicationVersion("0.0.1");
+    QApplication app(argc, argv);
+    QApplication::setApplicationName("trimmeh-kde");
+    QApplication::setApplicationVersion("0.0.1");
+    QApplication::setQuitOnLastWindowClosed(false);
 
     QCommandLineParser parser;
     parser.setApplicationDescription("Trimmeh KDE (Klipper D-Bus auto-trim)");
@@ -54,6 +56,8 @@ int main(int argc, char **argv) {
         qCritical().noquote() << "[trimmeh-kde]" << error;
         return 5;
     }
+
+    TrayApp tray(&watcher);
 
     qInfo() << "[trimmeh-kde] Listening for clipboardHistoryUpdated...";
     return app.exec();

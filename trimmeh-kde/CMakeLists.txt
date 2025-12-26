@@ -10,7 +10,8 @@ set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
 
-find_package(Qt6 REQUIRED COMPONENTS Core DBus Qml)
+find_package(Qt6 REQUIRED COMPONENTS Core DBus Qml Widgets)
+find_package(KF6 REQUIRED COMPONENTS StatusNotifierItem)
 
 find_program(NPX npx)
 if (NOT NPX)
@@ -43,13 +44,15 @@ add_executable(trimmeh-kde
     src/klipper_bridge.cpp
     src/klipper_bridge.h
     src/settings.h
+    src/tray_app.cpp
+    src/tray_app.h
     src/trim_core.cpp
     src/trim_core.h
 )
 
 add_dependencies(trimmeh-kde trimmeh_core_bundle)
 
-target_link_libraries(trimmeh-kde PRIVATE Qt6::Core Qt6::DBus Qt6::Qml)
+target_link_libraries(trimmeh-kde PRIVATE Qt6::Core Qt6::DBus Qt6::Qml Qt6::Widgets KF6::StatusNotifierItem)
 
 add_custom_command(TARGET trimmeh-kde POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CORE_JS}" $<TARGET_FILE_DIR:trimmeh-kde>/trimmeh-core.js
