@@ -10,5 +10,5 @@ struct Settings {
     int maxLines = 10;
     QString aggressiveness = QStringLiteral("normal");
     int graceDelayMs = 80;
-    int pasteRestoreDelayMs = 200;
+    int pasteRestoreDelayMs = 1200;
 };

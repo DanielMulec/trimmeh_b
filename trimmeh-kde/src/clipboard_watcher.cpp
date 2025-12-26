@@ -243,6 +243,7 @@ bool ClipboardWatcher::swapClipboardTemporarily(const QString &text, const QStri
         qWarning().noquote() << "[trimmeh-kde]" << error;
         return false;
     }
+    qInfo().noquote() << "[trimmeh-kde] manual swap window" << m_settings.pasteRestoreDelayMs << "ms";
 
     if (previous.isEmpty()) {
         return true;
