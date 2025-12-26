@@ -13,8 +13,11 @@ constexpr const char kMethodGet[] = "getClipboardContents";
 constexpr const char kMethodSet[] = "setClipboardContents";
 }
 
+KlipperBridge::KlipperBridge()
+    : m_bus(QDBusConnection::sessionBus()) {
+}
+
 bool KlipperBridge::init(QString *errorMessage) {
-    m_bus = QDBusConnection::sessionBus();
     if (!m_bus.isConnected()) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("Failed to connect to session bus: %1")
@@ -39,15 +42,15 @@ bool KlipperBridge::init(QString *errorMessage) {
         return false;
     }
 
-    m_iface = QDBusInterface(serviceName,
-                             QString::fromLatin1(kPath),
-                             QString::fromLatin1(kInterface),
-                             m_bus);
+    m_iface = std::make_unique<QDBusInterface>(serviceName,
+                                               QString::fromLatin1(kPath),
+                                               QString::fromLatin1(kInterface),
+                                               m_bus);
 
-    if (!m_iface.isValid()) {
+    if (!m_iface || !m_iface->isValid()) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("Klipper interface invalid: %1")
-                                .arg(m_iface.lastError().message());
+                                .arg(m_iface ? m_iface->lastError().message() : QStringLiteral("unknown"));
         }
         return false;
     }
@@ -80,14 +83,14 @@ bool KlipperBridge::connectClipboardSignal(QObject *receiver, const char *slot, 
 }
 
 QString KlipperBridge::getClipboardText(QString *errorMessage) {
-    if (!m_ready) {
+    if (!m_ready || !m_iface) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("Klipper bridge not initialized");
         }
         return QString();
     }
 
-    QDBusReply<QString> reply = m_iface.call(QString::fromLatin1(kMethodGet));
+    QDBusReply<QString> reply = m_iface->call(QString::fromLatin1(kMethodGet));
     if (!reply.isValid()) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("getClipboardContents failed: %1")
@@ -99,14 +102,14 @@ QString KlipperBridge::getClipboardText(QString *errorMessage) {
 }
 
 bool KlipperBridge::setClipboardText(const QString &text, QString *errorMessage) {
-    if (!m_ready) {
+    if (!m_ready || !m_iface) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("Klipper bridge not initialized");
         }
         return false;
     }
 
-    QDBusReply<void> reply = m_iface.call(QString::fromLatin1(kMethodSet), text);
+    QDBusReply<void> reply = m_iface->call(QString::fromLatin1(kMethodSet), text);
     if (!reply.isValid()) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("setClipboardContents failed: %1")

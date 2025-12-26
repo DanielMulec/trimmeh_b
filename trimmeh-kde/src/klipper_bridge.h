@@ -4,8 +4,11 @@
 #include <QDBusInterface>
 #include <QString>
 
+#include <memory>
+
 class KlipperBridge {
 public:
+    KlipperBridge();
     bool init(QString *errorMessage = nullptr);
     bool connectClipboardSignal(QObject *receiver, const char *slot, QString *errorMessage = nullptr);
 
@@ -14,6 +17,6 @@ public:
 
 private:
     QDBusConnection m_bus;
-    QDBusInterface m_iface;
+    std::unique_ptr<QDBusInterface> m_iface;
     bool m_ready = false;
 };
