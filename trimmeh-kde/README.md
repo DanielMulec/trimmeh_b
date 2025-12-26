@@ -1,15 +1,25 @@
-# Trimmeh KDE (Klipper DBus probe)
+# Trimmeh KDE (Klipper DBus)
 
-This is a minimal Phase 0 probe to validate Klipper DBus interaction on Plasma 6.5.4.
+This directory contains:
+- `trimmeh-kde`: the KDE auto-trim app (Phase 1+).
+- `trimmeh-kde-probe`: a minimal diagnostic probe for Klipper DBus.
 
 ## Build
+
+Requires Node + `npx` (used to bundle `trimmeh-core-js`).
 
 ```sh
 cmake -S trimmeh-kde -B build-kde -DCMAKE_BUILD_TYPE=Debug
 cmake --build build-kde
 ```
 
-## Run
+## Run (app)
+
+```sh
+./build-kde/trimmeh-kde
+```
+
+## Run (probe)
 
 ```sh
 ./build-kde/trimmeh-kde-probe
