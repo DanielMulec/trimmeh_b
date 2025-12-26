@@ -59,16 +59,3 @@ extension-zip: bundle-extension
 	cd shell-extension && zip -r ../trimmeh-extension.zip \
 		metadata.json extension.js prefs.js stylesheet.css LICENSE \
 		schemas/org.gnome.shell.extensions.trimmeh.gschema.xml schemas/gschemas.compiled
-
-# KDE/Plasma 6 tray app (in progress)
-kde-configure:
-	cmake -S trimmeh-kde -B build-kde -DCMAKE_BUILD_TYPE=Debug
-
-kde-build: kde-configure
-	cmake --build build-kde
-
-kde-run: kde-build
-	./build-kde/trimmeh-kde
-
-kde-check-vectors: kde-build
-	./build-kde/trimmeh-kde --check-vectors tests/trim-vectors.json

@@ -64,8 +64,5 @@ Common tasks (from repo root):
 - Dev loop: edit core/TS, run `just install-extension`, reload GNOME Shell extension, test.
 - Tests: `cargo test -p trimmeh-core` (goldens for prompts, gutters, URLs, blank lines, list skipping, backslash merge).
 
-## KDE / Plasma port (WIP)
-A KDE Plasma 6 port is in progress in `trimmeh-kde/` (native KF6/Qt6 tray app). See `trimmeh-kde/README.md`.
-
 ## Credit
 Trimmeh is a port of Peter Steinberger’s Trimmy — think of it as Trimmy’s Wayland-native cousin. MIT licensed.
