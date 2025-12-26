@@ -15,6 +15,11 @@ QString formatJsError(const QJSValue &error, const QString &sourcePath) {
 }
 
 bool TrimCore::load(const QString &jsPath, QString *errorMessage) {
+    QJSValue global = m_engine.globalObject();
+    if (global.property(QStringLiteral("globalThis")).isUndefined()) {
+        global.setProperty(QStringLiteral("globalThis"), global);
+    }
+
     QFile file(jsPath);
     if (!file.open(QIODevice::ReadOnly)) {
         if (errorMessage) {
