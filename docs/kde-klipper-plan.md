@@ -7,6 +7,33 @@ Goal: **full Trimmy parity (functionality + UI + UX)** on KDE/Plasma, using Klip
 
 ---
 
+## 0) Current status (2025-12-26)
+
+Implemented and verified on **Plasma 6.5.4**:
+- **Phase 0 probe**: `trimmeh-kde-probe` can read/write via Klipper DBus and receives `clipboardHistoryUpdated`.
+- **Auto-trim**: working via Klipper DBus with debounce + self-write hash guard.
+- **JS core**: `trimmeh-core-js` bundled for KDE (QJSEngine) via `trimmeh-core-js/src/kde-entry.ts`.
+- **Tray UI (minimal)**: KStatusNotifierItem menu with:
+  - Paste Trimmed (High)
+  - Paste Original
+  - Restore last copy
+  - Auto‑Trim toggle
+  - Last preview line
+  - Quit
+- **Manual paste swap**: clipboard swap → user paste → restore works.
+
+Not yet implemented:
+- **Paste injection** (portal permission + actual keystroke injection).
+- **Settings window** (General / Aggressiveness / Shortcuts / About).
+- **Hotkeys** (KGlobalAccel).
+- **Autostart** toggle.
+- **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
+
+Temporary deviations:
+- **Paste restore delay** is currently **1200 ms** (to make manual timing easy). Trimmy parity target is **200 ms**. We should return to 200 ms or make it configurable once paste injection exists.
+
+---
+
 ## 1) Klipper D-Bus surface (authoritative)
 
 Klipper registers a session-bus service and object we can call directly:
@@ -87,24 +114,29 @@ Use `KGlobalAccel` for global shortcuts and an autostart desktop entry toggle.
   - Listens to `clipboardHistoryUpdated`.
   - Logs `getClipboardContents`.
 - Confirms D-Bus contract on **Plasma 6.5.4**.
+Status: **Done** (`trimmeh-kde-probe`)
 
 **Phase 1 — Headless auto-trim**
 - Implement `KlipperBridge` + `ClipboardWatcher`.
 - Integrate `trimmeh-core-js` (QJSEngine).
 - Auto-trim behavior and guards only (no UI).
+Status: **Done** (now runs inside the tray app)
 
 **Phase 2 — Tray UI + Preferences**
 - Tray menu, preview, toggles, actions.
 - Preferences window with tabs (General / Aggressiveness / Shortcuts / About).
+Status: **Tray menu done (minimal)**; **Preferences pending**
 
 **Phase 3 — Manual paste parity**
 - `Paste Trimmed` and `Paste Original` using swap → paste → restore.
 - Permission callout and “grant permission” flow via portal.
+Status: **Swap/restore done**; **portal paste injection + permission UX pending**
 
 **Phase 4 — QA + release hygiene**
 - Parity test checklist and manual test plan.
 - Vector tests for the JS core.
 - Autostart and config persistence.
+Status: **Pending**
 
 ---
 
@@ -203,7 +235,8 @@ Tab view with fixed size: **410 × 484**.
 
 ### D. Behavioral parity (timing + messaging)
 - **Grace delay**: 80 ms before reading clipboard after change.
-- **Paste restore delay**: 200 ms after paste.
+ - **Paste restore delay**: 200 ms after paste (Trimmy parity target).  
+   Current KDE build uses **1200 ms** for easier manual timing; revert or make configurable once paste injection lands.
 - **Permission message on failure**:
   - Trimmy uses: “Enable Accessibility to let Trimmy paste (System Settings → Privacy & Security → Accessibility).”
   - KDE adaptation: mention portal permission path.
@@ -234,7 +267,7 @@ Tab view with fixed size: **410 × 484**.
 
 ## 6) Open questions / risk list
 
-- Does Klipper’s D‑Bus signal always fire on all clipboard changes in Plasma 6.5.4? (Phase 0 confirms.)
+- Does Klipper’s D‑Bus signal always fire on all clipboard changes in Plasma 6.5.4? **Confirmed yes** via probe.
 - Does `getClipboardContents` always return text even when the clipboard holds rich content?
 - Portal permissions: best UX for “Grant Permission” on KDE/Wayland.
 - Update UX: on Linux, do we hide update UI or wire it to distro package updates?
