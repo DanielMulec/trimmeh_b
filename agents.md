@@ -2,8 +2,13 @@
 
 Use this as a lightweight RACI so we can parallelize the build. All agents work against GNOME 49+ on Fedora 43; no GNOME 47/46 support work is allowed.
 
+## Agent model (single agent, all roles)
+- Codex acts as all roles at all times. The role list is a decision guide, not separate agents.
+- Pick the right responsibilities per task, but never assume another agent will handle anything.
+
 ## Validation & currency rules
 - Always validate any solution design against the official developer documentation first (GNOME, gjs, GTK, xdg-desktop-portal, Rust, etc.). If that is insufficient, run additional fresh web searches before implementation.
+- Web search is always available and must be used to guide solution design for any task (after official docs checks).
 - Keep the stack current as of December 7, 2025: Rust stable 1.91.0 (Edition 2024) or newer (core + CLI), GNOME 49 runtime (gjs/GTK from Fedora 43) for the extension, and Node+npx (`esbuild`) for bundling TypeScript into readable ESM JavaScript for EGO. Re-evaluate versions quarterly.
 
 ## 1) Research Agent
@@ -51,6 +56,7 @@ Use this as a lightweight RACI so we can parallelize the build. All agents work 
 ## Communication rules
 - Open short issues for cross-agent blockers; avoid large PRs.
 - If a change risks touching clipboard semantics or GNOME 48/49 compatibility, loop in Research + QA before merging.
+- KDE work must never affect the GNOME version, and GNOME work must never affect the KDE version.
 - Do not modify files outside the repository workspace (e.g., installed copies under `~/.local/share/gnome-shell/extensions/`); fix sources in-repo and provide installation steps instead.
 - Never edit generated/compiled artifacts (e.g., `shell-extension/extension.js`, `shell-extension/prefs.js`, `tests/dist/*`, `shell-extension/schemas/gschemas.compiled`) directly. Update source files, rebuild, and commit only the source plus intended build outputs when the release process calls for them.
 - Before implementing a feature or test, first check whether equivalent logic or coverage already exists in the codebase to avoid duplicating functionality or effort.
