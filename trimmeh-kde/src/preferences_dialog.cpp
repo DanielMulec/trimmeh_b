@@ -7,10 +7,13 @@
 #include <QDialogButtonBox>
 #include <QFormLayout>
 #include <QGroupBox>
+#include <QHBoxLayout>
+#include <QKeySequenceEdit>
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QRadioButton>
+#include <QSignalBlocker>
 #include <QTabWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -179,10 +182,70 @@ void PreferencesDialog::buildShortcutsTab(QTabWidget *tabs) {
     auto *panel = new QWidget(this);
     auto *layout = new QVBoxLayout(panel);
 
+    auto *trimmedRow = new QHBoxLayout();
+    m_pasteTrimmedHotkeyEnabled = new QCheckBox(QStringLiteral("Enable global “Paste Trimmed” hotkey"), panel);
+    m_pasteTrimmedHotkey = new QKeySequenceEdit(panel);
+    connect(m_pasteTrimmedHotkeyEnabled, &QCheckBox::toggled, this, [this](bool enabled) {
+        if (m_pasteTrimmedHotkey) {
+            m_pasteTrimmedHotkey->setEnabled(enabled);
+        }
+        if (m_watcher) {
+            m_watcher->setPasteTrimmedHotkeyEnabled(enabled);
+        }
+    });
+    connect(m_pasteTrimmedHotkey, &QKeySequenceEdit::keySequenceChanged, this, [this](const QKeySequence &sequence) {
+        if (m_watcher) {
+            m_watcher->setPasteTrimmedHotkey(sequence.toString(QKeySequence::PortableText));
+        }
+    });
+    trimmedRow->addWidget(m_pasteTrimmedHotkeyEnabled, 1);
+    trimmedRow->addWidget(m_pasteTrimmedHotkey);
+
+    auto *originalRow = new QHBoxLayout();
+    m_pasteOriginalHotkeyEnabled = new QCheckBox(QStringLiteral("Enable global “Paste Original” hotkey"), panel);
+    m_pasteOriginalHotkey = new QKeySequenceEdit(panel);
+    connect(m_pasteOriginalHotkeyEnabled, &QCheckBox::toggled, this, [this](bool enabled) {
+        if (m_pasteOriginalHotkey) {
+            m_pasteOriginalHotkey->setEnabled(enabled);
+        }
+        if (m_watcher) {
+            m_watcher->setPasteOriginalHotkeyEnabled(enabled);
+        }
+    });
+    connect(m_pasteOriginalHotkey, &QKeySequenceEdit::keySequenceChanged, this, [this](const QKeySequence &sequence) {
+        if (m_watcher) {
+            m_watcher->setPasteOriginalHotkey(sequence.toString(QKeySequence::PortableText));
+        }
+    });
+    originalRow->addWidget(m_pasteOriginalHotkeyEnabled, 1);
+    originalRow->addWidget(m_pasteOriginalHotkey);
+
+    auto *toggleRow = new QHBoxLayout();
+    m_toggleAutoTrimHotkeyEnabled = new QCheckBox(QStringLiteral("Enable global Auto-Trim toggle hotkey"), panel);
+    m_toggleAutoTrimHotkey = new QKeySequenceEdit(panel);
+    connect(m_toggleAutoTrimHotkeyEnabled, &QCheckBox::toggled, this, [this](bool enabled) {
+        if (m_toggleAutoTrimHotkey) {
+            m_toggleAutoTrimHotkey->setEnabled(enabled);
+        }
+        if (m_watcher) {
+            m_watcher->setToggleAutoTrimHotkeyEnabled(enabled);
+        }
+    });
+    connect(m_toggleAutoTrimHotkey, &QKeySequenceEdit::keySequenceChanged, this, [this](const QKeySequence &sequence) {
+        if (m_watcher) {
+            m_watcher->setToggleAutoTrimHotkey(sequence.toString(QKeySequence::PortableText));
+        }
+    });
+    toggleRow->addWidget(m_toggleAutoTrimHotkeyEnabled, 1);
+    toggleRow->addWidget(m_toggleAutoTrimHotkey);
+
     auto *note = new QLabel(QStringLiteral(
-        "Global shortcuts are not wired yet. This tab is a placeholder for Trimmy parity."), panel);
+        "Paste Trimmed always runs at High aggressiveness and restores your clipboard afterward."), panel);
     note->setWordWrap(true);
 
+    layout->addLayout(trimmedRow);
+    layout->addLayout(originalRow);
+    layout->addLayout(toggleRow);
     layout->addWidget(note);
     layout->addStretch(1);
 
@@ -234,6 +297,38 @@ void PreferencesDialog::refreshFromWatcher() {
     if (m_low) m_low->setChecked(aggr == QStringLiteral("low"));
     if (m_normal) m_normal->setChecked(aggr == QStringLiteral("normal"));
     if (m_high) m_high->setChecked(aggr == QStringLiteral("high"));
+
+    if (m_pasteTrimmedHotkeyEnabled) {
+        const QSignalBlocker block(m_pasteTrimmedHotkeyEnabled);
+        m_pasteTrimmedHotkeyEnabled->setChecked(m_watcher->pasteTrimmedHotkeyEnabled());
+    }
+    if (m_pasteOriginalHotkeyEnabled) {
+        const QSignalBlocker block(m_pasteOriginalHotkeyEnabled);
+        m_pasteOriginalHotkeyEnabled->setChecked(m_watcher->pasteOriginalHotkeyEnabled());
+    }
+    if (m_toggleAutoTrimHotkeyEnabled) {
+        const QSignalBlocker block(m_toggleAutoTrimHotkeyEnabled);
+        m_toggleAutoTrimHotkeyEnabled->setChecked(m_watcher->toggleAutoTrimHotkeyEnabled());
+    }
+
+    if (m_pasteTrimmedHotkey) {
+        const QSignalBlocker block(m_pasteTrimmedHotkey);
+        m_pasteTrimmedHotkey->setKeySequence(
+            QKeySequence::fromString(m_watcher->pasteTrimmedHotkey(), QKeySequence::PortableText));
+        m_pasteTrimmedHotkey->setEnabled(m_watcher->pasteTrimmedHotkeyEnabled());
+    }
+    if (m_pasteOriginalHotkey) {
+        const QSignalBlocker block(m_pasteOriginalHotkey);
+        m_pasteOriginalHotkey->setKeySequence(
+            QKeySequence::fromString(m_watcher->pasteOriginalHotkey(), QKeySequence::PortableText));
+        m_pasteOriginalHotkey->setEnabled(m_watcher->pasteOriginalHotkeyEnabled());
+    }
+    if (m_toggleAutoTrimHotkey) {
+        const QSignalBlocker block(m_toggleAutoTrimHotkey);
+        m_toggleAutoTrimHotkey->setKeySequence(
+            QKeySequence::fromString(m_watcher->toggleAutoTrimHotkey(), QKeySequence::PortableText));
+        m_toggleAutoTrimHotkey->setEnabled(m_watcher->toggleAutoTrimHotkeyEnabled());
+    }
 
     updateAggressivenessPreview();
 }

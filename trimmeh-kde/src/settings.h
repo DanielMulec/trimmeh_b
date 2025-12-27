@@ -12,4 +12,10 @@ struct Settings {
     int graceDelayMs = 80;
     int pasteRestoreDelayMs = 1200;
     bool startAtLogin = false;
+    bool pasteTrimmedHotkeyEnabled = true;
+    bool pasteOriginalHotkeyEnabled = false;
+    bool toggleAutoTrimHotkeyEnabled = false;
+    QString pasteTrimmedHotkey;
+    QString pasteOriginalHotkey;
+    QString toggleAutoTrimHotkey;
 };

@@ -29,6 +29,12 @@ public:
     int maxLines() const { return m_settings.maxLines; }
     QString aggressiveness() const { return m_settings.aggressiveness; }
     bool startAtLogin() const { return m_settings.startAtLogin; }
+    bool pasteTrimmedHotkeyEnabled() const { return m_settings.pasteTrimmedHotkeyEnabled; }
+    bool pasteOriginalHotkeyEnabled() const { return m_settings.pasteOriginalHotkeyEnabled; }
+    bool toggleAutoTrimHotkeyEnabled() const { return m_settings.toggleAutoTrimHotkeyEnabled; }
+    QString pasteTrimmedHotkey() const { return m_settings.pasteTrimmedHotkey; }
+    QString pasteOriginalHotkey() const { return m_settings.pasteOriginalHotkey; }
+    QString toggleAutoTrimHotkey() const { return m_settings.toggleAutoTrimHotkey; }
 
     void setKeepBlankLines(bool enabled);
     void setStripBoxChars(bool enabled);
@@ -36,6 +42,12 @@ public:
     void setMaxLines(int maxLines);
     void setAggressiveness(const QString &level);
     void setStartAtLogin(bool enabled);
+    void setPasteTrimmedHotkeyEnabled(bool enabled);
+    void setPasteOriginalHotkeyEnabled(bool enabled);
+    void setToggleAutoTrimHotkeyEnabled(bool enabled);
+    void setPasteTrimmedHotkey(const QString &sequence);
+    void setPasteOriginalHotkey(const QString &sequence);
+    void setToggleAutoTrimHotkey(const QString &sequence);
 
     QString lastSummary() const { return m_lastSummary; }
     QString lastOriginal() const { return m_lastOriginal; }

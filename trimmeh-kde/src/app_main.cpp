@@ -1,5 +1,6 @@
 #include "autostart_manager.h"
 #include "clipboard_watcher.h"
+#include "hotkey_manager.h"
 #include "klipper_bridge.h"
 #include "settings.h"
 #include "settings_store.h"
@@ -75,6 +76,7 @@ int main(int argc, char **argv) {
         return 5;
     }
 
+    HotkeyManager hotkeys(&watcher);
     TrayApp tray(&watcher, &core);
 
     qInfo() << "[trimmeh-kde] Listening for clipboardHistoryUpdated...";

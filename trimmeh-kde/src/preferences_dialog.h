@@ -10,6 +10,7 @@ class QLabel;
 class QPlainTextEdit;
 class QRadioButton;
 class QCheckBox;
+class QKeySequenceEdit;
 
 class PreferencesDialog : public QDialog {
     Q_OBJECT
@@ -37,6 +38,12 @@ private:
     QCheckBox *m_stripBox = nullptr;
     QCheckBox *m_trimPrompts = nullptr;
     QCheckBox *m_startAtLogin = nullptr;
+    QCheckBox *m_pasteTrimmedHotkeyEnabled = nullptr;
+    QCheckBox *m_pasteOriginalHotkeyEnabled = nullptr;
+    QCheckBox *m_toggleAutoTrimHotkeyEnabled = nullptr;
+    QKeySequenceEdit *m_pasteTrimmedHotkey = nullptr;
+    QKeySequenceEdit *m_pasteOriginalHotkey = nullptr;
+    QKeySequenceEdit *m_toggleAutoTrimHotkey = nullptr;
 
     QRadioButton *m_low = nullptr;
     QRadioButton *m_normal = nullptr;

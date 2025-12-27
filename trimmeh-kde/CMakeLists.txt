@@ -12,6 +12,7 @@ set(CMAKE_AUTOUIC ON)
 
 find_package(Qt6 REQUIRED COMPONENTS Core DBus Qml Widgets)
 find_package(KF6StatusNotifierItem REQUIRED)
+find_package(KF6GlobalAccel REQUIRED)
 
 find_program(NPX npx)
 if (NOT NPX)
@@ -43,6 +44,8 @@ add_executable(trimmeh-kde
     src/autostart_manager.h
     src/clipboard_watcher.cpp
     src/clipboard_watcher.h
+    src/hotkey_manager.cpp
+    src/hotkey_manager.h
     src/klipper_bridge.cpp
     src/klipper_bridge.h
     src/preferences_dialog.cpp
@@ -58,7 +61,7 @@ add_executable(trimmeh-kde
 
 add_dependencies(trimmeh-kde trimmeh_core_bundle)
 
-target_link_libraries(trimmeh-kde PRIVATE Qt6::Core Qt6::DBus Qt6::Qml Qt6::Widgets KF6::StatusNotifierItem)
+target_link_libraries(trimmeh-kde PRIVATE Qt6::Core Qt6::DBus Qt6::Qml Qt6::Widgets KF6::StatusNotifierItem KF6::GlobalAccel)
 
 add_custom_command(TARGET trimmeh-kde POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CORE_JS}" $<TARGET_FILE_DIR:trimmeh-kde>/trimmeh-core.js

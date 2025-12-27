@@ -103,6 +103,60 @@ void ClipboardWatcher::setStartAtLogin(bool enabled) {
     emit stateChanged();
 }
 
+void ClipboardWatcher::setPasteTrimmedHotkeyEnabled(bool enabled) {
+    if (m_settings.pasteTrimmedHotkeyEnabled == enabled) {
+        return;
+    }
+    m_settings.pasteTrimmedHotkeyEnabled = enabled;
+    persistSettings();
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setPasteOriginalHotkeyEnabled(bool enabled) {
+    if (m_settings.pasteOriginalHotkeyEnabled == enabled) {
+        return;
+    }
+    m_settings.pasteOriginalHotkeyEnabled = enabled;
+    persistSettings();
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setToggleAutoTrimHotkeyEnabled(bool enabled) {
+    if (m_settings.toggleAutoTrimHotkeyEnabled == enabled) {
+        return;
+    }
+    m_settings.toggleAutoTrimHotkeyEnabled = enabled;
+    persistSettings();
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setPasteTrimmedHotkey(const QString &sequence) {
+    if (m_settings.pasteTrimmedHotkey == sequence) {
+        return;
+    }
+    m_settings.pasteTrimmedHotkey = sequence;
+    persistSettings();
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setPasteOriginalHotkey(const QString &sequence) {
+    if (m_settings.pasteOriginalHotkey == sequence) {
+        return;
+    }
+    m_settings.pasteOriginalHotkey = sequence;
+    persistSettings();
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setToggleAutoTrimHotkey(const QString &sequence) {
+    if (m_settings.toggleAutoTrimHotkey == sequence) {
+        return;
+    }
+    m_settings.toggleAutoTrimHotkey = sequence;
+    persistSettings();
+    emit stateChanged();
+}
+
 void ClipboardWatcher::onClipboardHistoryUpdated() {
     if (!m_enabled || !m_bridge || !m_core) {
         return;
