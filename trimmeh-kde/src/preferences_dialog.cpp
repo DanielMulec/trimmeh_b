@@ -385,6 +385,13 @@ void PreferencesDialog::refreshPermission() {
         return;
     }
 
+    if (m_injector->state() == PortalPasteInjector::State::Error && !m_injector->lastError().isEmpty()) {
+        m_permissionLabel->setText(QStringLiteral("Portal error: %1").arg(m_injector->lastError()));
+        m_permissionButton->setEnabled(true);
+        m_permissionGroup->setVisible(true);
+        return;
+    }
+
     if (m_injector->state() == PortalPasteInjector::State::Denied) {
         m_permissionLabel->setText(QStringLiteral("Permission was denied. Click Grant Permission to retry."));
     } else {

@@ -3,6 +3,7 @@
 #include <QDBusConnectionInterface>
 #include <QDBusObjectPath>
 #include <QDBusReply>
+#include <QDebug>
 #include <QSettings>
 #include <QUuid>
 
@@ -119,6 +120,7 @@ void PortalPasteInjector::requestPermission() {
         return;
     }
 
+    qInfo() << "[trimmeh-kde] portal permission request started";
     updateState(State::Requesting);
     clearSession();
     createSession();
@@ -153,6 +155,13 @@ void PortalPasteInjector::updateState(State state, const QString &error) {
     m_state = state;
     m_lastError = error;
     if (changed) {
+        if (m_state == State::Error && !m_lastError.isEmpty()) {
+            qWarning().noquote() << "[trimmeh-kde] portal error:" << m_lastError;
+        } else {
+            qInfo() << "[trimmeh-kde] portal state:" << static_cast<int>(m_state);
+        }
+    }
+    if (changed) {
         emit stateChanged();
     }
 }
@@ -172,6 +181,8 @@ void PortalPasteInjector::createSession() {
     const QString handleToken = makeToken(QStringLiteral("trimmeh"));
     const QString sessionToken = makeToken(QStringLiteral("trimmeh_session"));
     const QString expectedHandle = makeRequestPath(handleToken);
+
+    qInfo().noquote() << "[trimmeh-kde] portal CreateSession handle" << expectedHandle;
 
     auto callback = [this](uint response, const QVariantMap &results) {
         handleCreateSessionResponse(response, results);
@@ -197,6 +208,7 @@ void PortalPasteInjector::createSession() {
     }
 
     const QString actualHandle = reply.value().path();
+    qInfo().noquote() << "[trimmeh-kde] portal CreateSession reply handle" << actualHandle;
     if (!actualHandle.isEmpty() && actualHandle != expectedHandle) {
         watcher->stop();
         watcher = new PortalRequestWatcher(m_bus, actualHandle, callback, this);
@@ -212,6 +224,8 @@ void PortalPasteInjector::selectDevices() {
     const QString handleToken = makeToken(QStringLiteral("trimmeh_select"));
     const QString expectedHandle = makeRequestPath(handleToken);
 
+    qInfo().noquote() << "[trimmeh-kde] portal SelectDevices handle" << expectedHandle;
+
     auto callback = [this](uint response, const QVariantMap &results) {
         handleSelectDevicesResponse(response, results);
     };
@@ -225,7 +239,7 @@ void PortalPasteInjector::selectDevices() {
 
     QVariantMap options;
     options.insert(QStringLiteral("handle_token"), handleToken);
-    options.insert(QStringLiteral("types"), kDeviceKeyboard);
+    options.insert(QStringLiteral("types"), static_cast<uint>(kDeviceKeyboard));
     options.insert(QStringLiteral("persist_mode"), kPersistModePersistent);
     const QString token = restoreToken();
     if (!token.isEmpty()) {
@@ -243,6 +257,7 @@ void PortalPasteInjector::selectDevices() {
     }
 
     const QString actualHandle = reply.value().path();
+    qInfo().noquote() << "[trimmeh-kde] portal SelectDevices reply handle" << actualHandle;
     if (!actualHandle.isEmpty() && actualHandle != expectedHandle) {
         watcher->stop();
         watcher = new PortalRequestWatcher(m_bus, actualHandle, callback, this);
@@ -258,6 +273,8 @@ void PortalPasteInjector::startSession() {
     const QString handleToken = makeToken(QStringLiteral("trimmeh_start"));
     const QString expectedHandle = makeRequestPath(handleToken);
 
+    qInfo().noquote() << "[trimmeh-kde] portal Start handle" << expectedHandle;
+
     auto callback = [this](uint response, const QVariantMap &results) {
         handleStartResponse(response, results);
     };
@@ -272,9 +289,10 @@ void PortalPasteInjector::startSession() {
     QVariantMap options;
     options.insert(QStringLiteral("handle_token"), handleToken);
 
+    const QString parentWindow;
     QDBusReply<QDBusObjectPath> reply = m_iface.call(QStringLiteral("Start"),
                                                      QDBusObjectPath(m_sessionHandle),
-                                                     QString(),
+                                                     parentWindow,
                                                      options);
     if (!reply.isValid()) {
         watcher->stop();
@@ -284,6 +302,7 @@ void PortalPasteInjector::startSession() {
     }
 
     const QString actualHandle = reply.value().path();
+    qInfo().noquote() << "[trimmeh-kde] portal Start reply handle" << actualHandle;
     if (!actualHandle.isEmpty() && actualHandle != expectedHandle) {
         watcher->stop();
         watcher = new PortalRequestWatcher(m_bus, actualHandle, callback, this);
@@ -296,6 +315,7 @@ void PortalPasteInjector::startSession() {
 }
 
 void PortalPasteInjector::handleCreateSessionResponse(uint response, const QVariantMap &results) {
+    qInfo().noquote() << "[trimmeh-kde] portal CreateSession response" << response;
     if (response != 0) {
         updateState(State::Denied, QStringLiteral("Portal session request denied."));
         return;
@@ -319,6 +339,7 @@ void PortalPasteInjector::handleCreateSessionResponse(uint response, const QVari
 }
 
 void PortalPasteInjector::handleSelectDevicesResponse(uint response, const QVariantMap &results) {
+    qInfo().noquote() << "[trimmeh-kde] portal SelectDevices response" << response;
     if (response != 0) {
         updateState(State::Denied, QStringLiteral("Portal device selection denied."));
         return;
@@ -329,6 +350,7 @@ void PortalPasteInjector::handleSelectDevicesResponse(uint response, const QVari
 }
 
 void PortalPasteInjector::handleStartResponse(uint response, const QVariantMap &results) {
+    qInfo().noquote() << "[trimmeh-kde] portal Start response" << response;
     if (response != 0) {
         updateState(State::Denied, QStringLiteral("Portal start denied."));
         return;
@@ -366,6 +388,7 @@ bool PortalPasteInjector::sendKeycode(int keycode, uint state) {
                                           state);
     if (!reply.isValid()) {
         m_lastError = reply.error().message();
+        qWarning().noquote() << "[trimmeh-kde] portal NotifyKeyboardKeycode failed:" << m_lastError;
         return false;
     }
     return true;

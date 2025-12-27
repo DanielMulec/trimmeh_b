@@ -163,6 +163,15 @@ void TrayApp::updatePermissionState() {
         return;
     }
 
+    if (m_injector->state() == PortalPasteInjector::State::Error && !m_injector->lastError().isEmpty()) {
+        m_permissionInfo->setText(QStringLiteral("Portal error: %1").arg(m_injector->lastError()));
+        m_permissionInfo->setVisible(true);
+        m_permissionGrant->setVisible(true);
+        m_permissionGrant->setEnabled(true);
+        m_permissionSeparator->setVisible(true);
+        return;
+    }
+
     m_permissionInfo->setText(QStringLiteral("Input permission needed to paste"));
     m_permissionInfo->setVisible(true);
     m_permissionGrant->setVisible(true);
