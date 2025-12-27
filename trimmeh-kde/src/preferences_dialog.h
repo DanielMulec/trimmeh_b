@@ -11,11 +11,17 @@ class QPlainTextEdit;
 class QRadioButton;
 class QCheckBox;
 class QKeySequenceEdit;
+class QPushButton;
+class QGroupBox;
+class PortalPasteInjector;
 
 class PreferencesDialog : public QDialog {
     Q_OBJECT
 public:
-    PreferencesDialog(ClipboardWatcher *watcher, TrimCore *core, QWidget *parent = nullptr);
+    PreferencesDialog(ClipboardWatcher *watcher,
+                      TrimCore *core,
+                      PortalPasteInjector *injector = nullptr,
+                      QWidget *parent = nullptr);
 
 private slots:
     void refreshFromWatcher();
@@ -26,12 +32,18 @@ private:
     void buildAggressivenessTab(QTabWidget *tabs);
     void buildShortcutsTab(QTabWidget *tabs);
     void buildAboutTab(QTabWidget *tabs);
+    void refreshPermission();
 
     QString sampleForAggressiveness(const QString &level) const;
     QString trimmedPreviewFor(const QString &level) const;
 
     ClipboardWatcher *m_watcher = nullptr;
     TrimCore *m_core = nullptr;
+    PortalPasteInjector *m_injector = nullptr;
+
+    QGroupBox *m_permissionGroup = nullptr;
+    QLabel *m_permissionLabel = nullptr;
+    QPushButton *m_permissionButton = nullptr;
 
     QCheckBox *m_autoTrim = nullptr;
     QCheckBox *m_keepBlank = nullptr;

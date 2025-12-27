@@ -9,6 +9,7 @@
 
 class SettingsStore;
 class AutostartManager;
+class PortalPasteInjector;
 
 class ClipboardWatcher : public QObject {
     Q_OBJECT
@@ -18,6 +19,7 @@ public:
                      const Settings &settings,
                      SettingsStore *store = nullptr,
                      AutostartManager *autostart = nullptr,
+                     PortalPasteInjector *injector = nullptr,
                      QObject *parent = nullptr);
 
     bool autoTrimEnabled() const { return m_settings.autoTrimEnabled; }
@@ -82,6 +84,7 @@ private:
     Settings m_settings;
     SettingsStore *m_store = nullptr;
     AutostartManager *m_autostart = nullptr;
+    PortalPasteInjector *m_injector = nullptr;
     QTimer m_debounce;
     quint64 m_gen = 0;
     quint64 m_pendingGen = 0;

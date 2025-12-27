@@ -1,5 +1,7 @@
 #include "preferences_dialog.h"
 
+#include "portal_paste_injector.h"
+
 #include <QApplication>
 #include <QButtonGroup>
 #include <QCheckBox>
@@ -18,10 +20,14 @@
 #include <QUrl>
 #include <QVBoxLayout>
 
-PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher, TrimCore *core, QWidget *parent)
+PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher,
+                                     TrimCore *core,
+                                     PortalPasteInjector *injector,
+                                     QWidget *parent)
     : QDialog(parent)
     , m_watcher(watcher)
     , m_core(core)
+    , m_injector(injector)
 {
     setWindowTitle(QStringLiteral("Trimmeh Settings"));
     setMinimumSize(410, 484);
@@ -43,12 +49,29 @@ PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher, TrimCore *core, 
     if (m_watcher) {
         connect(m_watcher, &ClipboardWatcher::stateChanged, this, &PreferencesDialog::refreshFromWatcher);
     }
+    if (m_injector) {
+        connect(m_injector, &PortalPasteInjector::stateChanged, this, &PreferencesDialog::refreshPermission);
+    }
     refreshFromWatcher();
+    refreshPermission();
 }
 
 void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     auto *panel = new QWidget(this);
     auto *layout = new QVBoxLayout(panel);
+
+    m_permissionGroup = new QGroupBox(QStringLiteral("Paste permission"), panel);
+    auto *permLayout = new QVBoxLayout(m_permissionGroup);
+    m_permissionLabel = new QLabel(QStringLiteral("Input permission is required to paste automatically."), m_permissionGroup);
+    m_permissionLabel->setWordWrap(true);
+    m_permissionButton = new QPushButton(QStringLiteral("Grant Permission"), m_permissionGroup);
+    connect(m_permissionButton, &QPushButton::clicked, this, [this]() {
+        if (m_injector) {
+            m_injector->requestPermission();
+        }
+    });
+    permLayout->addWidget(m_permissionLabel);
+    permLayout->addWidget(m_permissionButton, 0, Qt::AlignLeft);
 
     m_autoTrim = new QCheckBox(QStringLiteral("Auto-trim enabled"), panel);
     m_autoTrim->setToolTip(QStringLiteral("Automatically trim clipboard content when it looks like a command."));
@@ -100,6 +123,7 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     auto *quitButton = new QPushButton(QStringLiteral("Quit Trimmeh"), panel);
     connect(quitButton, &QPushButton::clicked, qApp, &QCoreApplication::quit);
 
+    layout->addWidget(m_permissionGroup);
     layout->addWidget(m_autoTrim);
     layout->addWidget(m_keepBlank);
     layout->addWidget(m_stripBox);
@@ -331,6 +355,43 @@ void PreferencesDialog::refreshFromWatcher() {
     }
 
     updateAggressivenessPreview();
+}
+
+void PreferencesDialog::refreshPermission() {
+    if (!m_permissionGroup || !m_permissionLabel || !m_permissionButton) {
+        return;
+    }
+    if (!m_injector) {
+        m_permissionGroup->setVisible(false);
+        return;
+    }
+
+    if (!m_injector->isAvailable()) {
+        m_permissionLabel->setText(QStringLiteral("Input permission portal is unavailable on this system."));
+        m_permissionButton->setEnabled(false);
+        m_permissionGroup->setVisible(true);
+        return;
+    }
+
+    if (m_injector->isReady()) {
+        m_permissionGroup->setVisible(false);
+        return;
+    }
+
+    if (m_injector->isRequesting()) {
+        m_permissionLabel->setText(QStringLiteral("Waiting for permission dialog..."));
+        m_permissionButton->setEnabled(false);
+        m_permissionGroup->setVisible(true);
+        return;
+    }
+
+    if (m_injector->state() == PortalPasteInjector::State::Denied) {
+        m_permissionLabel->setText(QStringLiteral("Permission was denied. Click Grant Permission to retry."));
+    } else {
+        m_permissionLabel->setText(QStringLiteral("Input permission is required to paste automatically."));
+    }
+    m_permissionButton->setEnabled(true);
+    m_permissionGroup->setVisible(true);
 }
 
 QString PreferencesDialog::sampleForAggressiveness(const QString &level) const {

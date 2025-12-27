@@ -2,6 +2,7 @@
 #include "clipboard_watcher.h"
 #include "hotkey_manager.h"
 #include "klipper_bridge.h"
+#include "portal_paste_injector.h"
 #include "settings.h"
 #include "settings_store.h"
 #include "tray_app.h"
@@ -70,14 +71,15 @@ int main(int argc, char **argv) {
     }
     store.save(settings);
 
-    ClipboardWatcher watcher(&bridge, &core, settings, &store, &autostart);
+    PortalPasteInjector injector;
+    ClipboardWatcher watcher(&bridge, &core, settings, &store, &autostart, &injector);
     if (!bridge.connectClipboardSignal(&watcher, SLOT(onClipboardHistoryUpdated()), &error)) {
         qCritical().noquote() << "[trimmeh-kde]" << error;
         return 5;
     }
 
     HotkeyManager hotkeys(&watcher);
-    TrayApp tray(&watcher, &core);
+    TrayApp tray(&watcher, &core, &injector);
 
     qInfo() << "[trimmeh-kde] Listening for clipboardHistoryUpdated...";
     return app.exec();

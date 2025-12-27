@@ -48,6 +48,8 @@ add_executable(trimmeh-kde
     src/hotkey_manager.h
     src/klipper_bridge.cpp
     src/klipper_bridge.h
+    src/portal_paste_injector.cpp
+    src/portal_paste_injector.h
     src/preferences_dialog.cpp
     src/preferences_dialog.h
     src/settings.h

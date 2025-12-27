@@ -1,5 +1,6 @@
 #include "tray_app.h"
 
+#include "portal_paste_injector.h"
 #include "preferences_dialog.h"
 
 #include <KStatusNotifierItem>
@@ -7,10 +8,14 @@
 #include <QApplication>
 #include <QMenu>
 
-TrayApp::TrayApp(ClipboardWatcher *watcher, TrimCore *core, QObject *parent)
+TrayApp::TrayApp(ClipboardWatcher *watcher,
+                 TrimCore *core,
+                 PortalPasteInjector *injector,
+                 QObject *parent)
     : QObject(parent)
     , m_watcher(watcher)
     , m_core(core)
+    , m_injector(injector)
 {
     m_item = new KStatusNotifierItem(QStringLiteral("trimmeh-kde"), this);
     m_item->setCategory(KStatusNotifierItem::ApplicationStatus);
@@ -19,6 +24,18 @@ TrayApp::TrayApp(ClipboardWatcher *watcher, TrimCore *core, QObject *parent)
     m_item->setIconByName(QStringLiteral("edit-cut"));
 
     m_menu = new QMenu();
+
+    if (m_injector) {
+        m_permissionInfo = m_menu->addAction(QStringLiteral("Input permission needed to paste"));
+        m_permissionInfo->setEnabled(false);
+        m_permissionGrant = m_menu->addAction(QStringLiteral("Grant Permission"));
+        connect(m_permissionGrant, &QAction::triggered, this, [this]() {
+            if (m_injector) {
+                m_injector->requestPermission();
+            }
+        });
+        m_permissionSeparator = m_menu->addSeparator();
+    }
 
     m_pasteTrimmed = m_menu->addAction(QStringLiteral("Paste Trimmed (High)"));
     connect(m_pasteTrimmed, &QAction::triggered, this, [this]() {
@@ -66,7 +83,7 @@ TrayApp::TrayApp(ClipboardWatcher *watcher, TrimCore *core, QObject *parent)
     auto *settings = m_menu->addAction(QStringLiteral("Settings..."));
     connect(settings, &QAction::triggered, this, [this]() {
         if (!m_prefs) {
-            m_prefs = new PreferencesDialog(m_watcher, m_core);
+            m_prefs = new PreferencesDialog(m_watcher, m_core, m_injector);
         }
         m_prefs->show();
         m_prefs->raise();
@@ -82,6 +99,10 @@ TrayApp::TrayApp(ClipboardWatcher *watcher, TrimCore *core, QObject *parent)
         updateSummary(m_watcher->lastSummary());
         connect(m_watcher, &ClipboardWatcher::summaryChanged, this, &TrayApp::updateSummary);
         connect(m_watcher, &ClipboardWatcher::stateChanged, this, &TrayApp::updateState);
+    }
+    if (m_injector) {
+        connect(m_injector, &PortalPasteInjector::stateChanged, this, &TrayApp::updatePermissionState);
+        updatePermissionState();
     }
 
     updateState();
@@ -111,4 +132,40 @@ void TrayApp::updateState() {
     if (m_restoreLast) {
         m_restoreLast->setEnabled(m_watcher->hasLastOriginal());
     }
+}
+
+void TrayApp::updatePermissionState() {
+    if (!m_injector || !m_permissionInfo || !m_permissionGrant || !m_permissionSeparator) {
+        return;
+    }
+
+    if (!m_injector->isAvailable()) {
+        m_permissionInfo->setText(QStringLiteral("Paste permission portal unavailable"));
+        m_permissionInfo->setVisible(true);
+        m_permissionGrant->setVisible(false);
+        m_permissionSeparator->setVisible(true);
+        return;
+    }
+
+    if (m_injector->isReady()) {
+        m_permissionInfo->setVisible(false);
+        m_permissionGrant->setVisible(false);
+        m_permissionSeparator->setVisible(false);
+        return;
+    }
+
+    if (m_injector->isRequesting()) {
+        m_permissionInfo->setText(QStringLiteral("Waiting for permission..."));
+        m_permissionInfo->setVisible(true);
+        m_permissionGrant->setVisible(true);
+        m_permissionGrant->setEnabled(false);
+        m_permissionSeparator->setVisible(true);
+        return;
+    }
+
+    m_permissionInfo->setText(QStringLiteral("Input permission needed to paste"));
+    m_permissionInfo->setVisible(true);
+    m_permissionGrant->setVisible(true);
+    m_permissionGrant->setEnabled(true);
+    m_permissionSeparator->setVisible(true);
 }

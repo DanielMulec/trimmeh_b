@@ -1,6 +1,7 @@
 #include "clipboard_watcher.h"
 
 #include "autostart_manager.h"
+#include "portal_paste_injector.h"
 #include "settings_store.h"
 
 #include <QCryptographicHash>
@@ -12,6 +13,7 @@ ClipboardWatcher::ClipboardWatcher(KlipperBridge *bridge,
                                    const Settings &settings,
                                    SettingsStore *store,
                                    AutostartManager *autostart,
+                                   PortalPasteInjector *injector,
                                    QObject *parent)
     : QObject(parent)
     , m_bridge(bridge)
@@ -19,6 +21,7 @@ ClipboardWatcher::ClipboardWatcher(KlipperBridge *bridge,
     , m_settings(settings)
     , m_store(store)
     , m_autostart(autostart)
+    , m_injector(injector)
 {
     m_debounce.setSingleShot(true);
     m_debounce.setInterval(m_settings.graceDelayMs);
@@ -274,7 +277,11 @@ bool ClipboardWatcher::pasteTrimmed() {
     m_lastTrimmed = result.output;
     updateSummary(result.output);
 
-    return swapClipboardTemporarily(result.output, previous);
+    const bool swapped = swapClipboardTemporarily(result.output, previous);
+    if (swapped && m_injector) {
+        m_injector->injectPaste();
+    }
+    return swapped;
 }
 
 bool ClipboardWatcher::pasteOriginal() {
@@ -309,7 +316,11 @@ bool ClipboardWatcher::pasteOriginal() {
     }
     updateSummary(original);
 
-    return swapClipboardTemporarily(original, previous);
+    const bool swapped = swapClipboardTemporarily(original, previous);
+    if (swapped && m_injector) {
+        m_injector->injectPaste();
+    }
+    return swapped;
 }
 
 bool ClipboardWatcher::restoreLastCopy() {

@@ -22,18 +22,18 @@ Implemented and verified on **Plasma 6.5.4**:
   - Settings…
   - Quit
 - **Preferences window (Qt Widgets)**:
-  - Tabs: General, Aggressiveness, Shortcuts (placeholder), About.
-  - General: Auto‑trim, Keep blank lines, Strip box chars, Strip prompts. “Extra clipboard fallbacks” + “Start at Login” are present but disabled.
+  - Tabs: General, Aggressiveness, Shortcuts (wired), About.
+  - General: Auto‑trim, Keep blank lines, Strip box chars, Strip prompts, Start at Login. “Extra clipboard fallbacks” is present but disabled.
   - Aggressiveness: Low/Normal/High with live preview (Before/After).
-- **Manual paste swap**: clipboard swap → user paste → timed restore works (no keystroke injection yet).
+- **Manual paste swap**: clipboard swap → inject paste → timed restore works.
 - **Settings persistence**: QSettings persists toggles + aggressiveness + max-lines.
 - **Autostart wiring**: “Start at Login” creates/removes `~/.config/autostart/trimmeh-kde.desktop`.
+- **Portal paste injection**: xdg-desktop-portal RemoteDesktop session + keyboard injection (Shift+Insert → Ctrl+V fallback).
+- **Permission UX**: tray + settings callout with “Grant Permission”.
+- **Global hotkeys**: KGlobalAccel wired + shortcuts tab (persisted).
 
 Not yet implemented:
-- **Paste injection** (portal permission + actual keystroke injection).
-- **Hotkeys** (KGlobalAccel).
 - **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
-- **Permission callouts** for paste/input access.
 
 Temporary deviations:
 - **Paste restore delay** is currently **1200 ms** (to make manual timing easy). Trimmy parity target is **200 ms**. We should return to 200 ms or make it configurable once paste injection exists.
@@ -131,12 +131,12 @@ Status: **Done** (now runs inside the tray app)
 **Phase 2 — Tray UI + Preferences**
 - Tray menu, preview, toggles, actions.
 - Preferences window with tabs (General / Aggressiveness / Shortcuts / About).
-Status: **Tray menu done (minimal)**; **Preferences implemented** (General + Aggressiveness + About; Shortcuts placeholder; settings persisted)
+Status: **Tray menu done (minimal)**; **Preferences implemented** (General + Aggressiveness + Shortcuts + About; settings persisted)
 
 **Phase 3 — Manual paste parity**
 - `Paste Trimmed` and `Paste Original` using swap → paste → restore.
 - Permission callout and “grant permission” flow via portal.
-Status: **Swap/restore done**; **portal paste injection + permission UX pending**
+Status: **Done** (swap/restore + portal injection + permission UX)
 
 **Phase 4 — QA + release hygiene**
 - Parity test checklist and manual test plan.
@@ -147,11 +147,10 @@ Status: **Autostart + persistence done**; **QA checklist + vectors pending**
 ---
 
 ## 3.5) Suggested next steps (priority order)
-1. **Hotkeys (KGlobalAccel)** + shortcuts UI wiring; store bindings in QSettings.
-2. **Portal paste injection** with permission UX + passive “Paste now” hint fallback.
-3. **Restore delay**: revert to 200 ms (or make configurable once injection exists).
-4. **Parity UI polish**: frontmost app label, strike‑through preview, stats badges.
-5. **QA pass**: manual checklist + add a minimal integration test plan for KDE.
+1. **Restore delay**: revert to 200 ms (or make configurable once injection exists).
+2. **Parity UI polish**: frontmost app label, strike‑through preview, stats badges.
+3. **QA pass**: manual checklist + add a minimal integration test plan for KDE.
+4. **Portal polish**: optional passive “Paste now” hint if permission is denied/unavailable.
 
 ---
 
