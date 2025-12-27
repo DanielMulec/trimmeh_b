@@ -239,13 +239,10 @@ bool ClipboardWatcher::pasteTrimmed() {
     }
 
     QString error;
-    QString source = m_lastOriginal;
-    if (source.isEmpty()) {
-        source = m_bridge->getClipboardText(&error);
-        if (!error.isEmpty()) {
-            qWarning().noquote() << "[trimmeh-kde]" << error;
-            return false;
-        }
+    QString source = m_bridge->getClipboardText(&error);
+    if (!error.isEmpty()) {
+        qWarning().noquote() << "[trimmeh-kde]" << error;
+        return false;
     }
     if (source.isEmpty()) {
         updateSummary(QStringLiteral("Nothing to paste."));
@@ -270,7 +267,10 @@ bool ClipboardWatcher::pasteTrimmed() {
         return false;
     }
 
-    m_lastOriginal = source;
+    const bool usesCachedOriginal = !m_lastOriginal.isEmpty() && source == m_lastTrimmed;
+    if (!usesCachedOriginal) {
+        m_lastOriginal = source;
+    }
     m_lastTrimmed = result.output;
     updateSummary(result.output);
 
@@ -283,19 +283,19 @@ bool ClipboardWatcher::pasteOriginal() {
     }
 
     QString error;
-    QString original = m_lastOriginal;
-    if (original.isEmpty()) {
-        original = m_bridge->getClipboardText(&error);
-        if (!error.isEmpty()) {
-            qWarning().noquote() << "[trimmeh-kde]" << error;
-            return false;
-        }
+    const QString current = m_bridge->getClipboardText(&error);
+    if (!error.isEmpty()) {
+        qWarning().noquote() << "[trimmeh-kde]" << error;
+        return false;
     }
 
-    if (original.isEmpty()) {
+    if (current.isEmpty()) {
         updateSummary(QStringLiteral("Nothing to paste."));
         return false;
     }
+
+    const bool usesCachedOriginal = !m_lastOriginal.isEmpty() && current == m_lastTrimmed;
+    const QString original = usesCachedOriginal ? m_lastOriginal : current;
 
     QString previous = m_bridge->getClipboardText(&error);
     if (!error.isEmpty()) {
@@ -303,8 +303,10 @@ bool ClipboardWatcher::pasteOriginal() {
         return false;
     }
 
-    m_lastOriginal = original;
-    m_lastTrimmed.clear();
+    if (!usesCachedOriginal) {
+        m_lastOriginal = original;
+        m_lastTrimmed.clear();
+    }
     updateSummary(original);
 
     return swapClipboardTemporarily(original, previous);
