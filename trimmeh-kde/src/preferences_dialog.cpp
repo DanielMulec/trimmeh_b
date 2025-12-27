@@ -86,9 +86,13 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     fallbacks->setToolTip(QStringLiteral("Try alternate clipboard formats when plain text is missing."));
     fallbacks->setEnabled(false);
 
-    auto *startLogin = new QCheckBox(QStringLiteral("Start at Login"), panel);
-    startLogin->setToolTip(QStringLiteral("Not implemented yet on KDE."));
-    startLogin->setEnabled(false);
+    m_startAtLogin = new QCheckBox(QStringLiteral("Start at Login"), panel);
+    m_startAtLogin->setToolTip(QStringLiteral("Launch Trimmeh automatically when you log in."));
+    connect(m_startAtLogin, &QCheckBox::toggled, this, [this](bool enabled) {
+        if (m_watcher) {
+            m_watcher->setStartAtLogin(enabled);
+        }
+    });
 
     auto *quitButton = new QPushButton(QStringLiteral("Quit Trimmeh"), panel);
     connect(quitButton, &QPushButton::clicked, qApp, &QCoreApplication::quit);
@@ -98,7 +102,7 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     layout->addWidget(m_stripBox);
     layout->addWidget(m_trimPrompts);
     layout->addWidget(fallbacks);
-    layout->addWidget(startLogin);
+    layout->addWidget(m_startAtLogin);
     layout->addStretch(1);
     layout->addWidget(quitButton);
 
@@ -224,6 +228,7 @@ void PreferencesDialog::refreshFromWatcher() {
     if (m_keepBlank) m_keepBlank->setChecked(m_watcher->keepBlankLines());
     if (m_stripBox) m_stripBox->setChecked(m_watcher->stripBoxChars());
     if (m_trimPrompts) m_trimPrompts->setChecked(m_watcher->trimPrompts());
+    if (m_startAtLogin) m_startAtLogin->setChecked(m_watcher->startAtLogin());
 
     const QString aggr = m_watcher->aggressiveness();
     if (m_low) m_low->setChecked(aggr == QStringLiteral("low"));

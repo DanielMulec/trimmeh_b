@@ -1,6 +1,8 @@
+#include "autostart_manager.h"
 #include "clipboard_watcher.h"
 #include "klipper_bridge.h"
 #include "settings.h"
+#include "settings_store.h"
 #include "tray_app.h"
 #include "trim_core.h"
 
@@ -9,6 +11,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QSettings>
 
 namespace {
 QString coreBundlePath() {
@@ -19,6 +22,8 @@ QString coreBundlePath() {
 
 int main(int argc, char **argv) {
     QApplication app(argc, argv);
+    QCoreApplication::setOrganizationName("Trimmeh");
+    QCoreApplication::setOrganizationDomain("trimmeh.dev");
     QApplication::setApplicationName("trimmeh-kde");
     QApplication::setApplicationVersion("0.0.1");
     QApplication::setQuitOnLastWindowClosed(false);
@@ -49,9 +54,22 @@ int main(int argc, char **argv) {
         return 4;
     }
 
-    Settings settings;
+    SettingsStore store;
+    AutostartManager autostart;
+    Settings settings = store.load();
+    QSettings raw;
+    if (raw.contains(QStringLiteral("startAtLogin"))) {
+        QString error;
+        if (!autostart.setEnabled(settings.startAtLogin, &error)) {
+            qWarning().noquote() << "[trimmeh-kde]" << error;
+        }
+        settings.startAtLogin = autostart.isEnabled();
+    } else {
+        settings.startAtLogin = autostart.isEnabled();
+    }
+    store.save(settings);
 
-    ClipboardWatcher watcher(&bridge, &core, settings);
+    ClipboardWatcher watcher(&bridge, &core, settings, &store, &autostart);
     if (!bridge.connectClipboardSignal(&watcher, SLOT(onClipboardHistoryUpdated()), &error)) {
         qCritical().noquote() << "[trimmeh-kde]" << error;
         return 5;

@@ -11,4 +11,5 @@ struct Settings {
     QString aggressiveness = QStringLiteral("normal");
     int graceDelayMs = 80;
     int pasteRestoreDelayMs = 1200;
+    bool startAtLogin = false;
 };

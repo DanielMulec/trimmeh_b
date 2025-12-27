@@ -39,6 +39,8 @@ target_link_libraries(trimmeh-kde-probe PRIVATE Qt6::Core Qt6::DBus)
 
 add_executable(trimmeh-kde
     src/app_main.cpp
+    src/autostart_manager.cpp
+    src/autostart_manager.h
     src/clipboard_watcher.cpp
     src/clipboard_watcher.h
     src/klipper_bridge.cpp
@@ -46,6 +48,8 @@ add_executable(trimmeh-kde
     src/preferences_dialog.cpp
     src/preferences_dialog.h
     src/settings.h
+    src/settings_store.cpp
+    src/settings_store.h
     src/tray_app.cpp
     src/tray_app.h
     src/trim_core.cpp

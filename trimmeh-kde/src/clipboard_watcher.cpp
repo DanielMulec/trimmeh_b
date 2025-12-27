@@ -1,14 +1,24 @@
 #include "clipboard_watcher.h"
 
+#include "autostart_manager.h"
+#include "settings_store.h"
+
 #include <QCryptographicHash>
 #include <QDebug>
 #include <QTimer>
 
-ClipboardWatcher::ClipboardWatcher(KlipperBridge *bridge, TrimCore *core, const Settings &settings, QObject *parent)
+ClipboardWatcher::ClipboardWatcher(KlipperBridge *bridge,
+                                   TrimCore *core,
+                                   const Settings &settings,
+                                   SettingsStore *store,
+                                   AutostartManager *autostart,
+                                   QObject *parent)
     : QObject(parent)
     , m_bridge(bridge)
     , m_core(core)
     , m_settings(settings)
+    , m_store(store)
+    , m_autostart(autostart)
 {
     m_debounce.setSingleShot(true);
     m_debounce.setInterval(m_settings.graceDelayMs);
@@ -20,6 +30,7 @@ void ClipboardWatcher::setAutoTrimEnabled(bool enabled) {
         return;
     }
     m_settings.autoTrimEnabled = enabled;
+    persistSettings();
     emit stateChanged();
 }
 
@@ -28,6 +39,7 @@ void ClipboardWatcher::setKeepBlankLines(bool enabled) {
         return;
     }
     m_settings.keepBlankLines = enabled;
+    persistSettings();
     emit stateChanged();
 }
 
@@ -36,6 +48,7 @@ void ClipboardWatcher::setStripBoxChars(bool enabled) {
         return;
     }
     m_settings.stripBoxChars = enabled;
+    persistSettings();
     emit stateChanged();
 }
 
@@ -44,6 +57,7 @@ void ClipboardWatcher::setTrimPrompts(bool enabled) {
         return;
     }
     m_settings.trimPrompts = enabled;
+    persistSettings();
     emit stateChanged();
 }
 
@@ -52,6 +66,7 @@ void ClipboardWatcher::setMaxLines(int maxLines) {
         return;
     }
     m_settings.maxLines = maxLines;
+    persistSettings();
     emit stateChanged();
 }
 
@@ -60,6 +75,31 @@ void ClipboardWatcher::setAggressiveness(const QString &level) {
         return;
     }
     m_settings.aggressiveness = level;
+    persistSettings();
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setStartAtLogin(bool enabled) {
+    if (m_autostart) {
+        QString error;
+        if (!m_autostart->setEnabled(enabled, &error)) {
+            qWarning().noquote() << "[trimmeh-kde]" << error;
+        }
+        const bool actual = m_autostart->isEnabled();
+        if (m_settings.startAtLogin == actual) {
+            if (actual != enabled) {
+                emit stateChanged();
+            }
+            return;
+        }
+        m_settings.startAtLogin = actual;
+    } else {
+        if (m_settings.startAtLogin == enabled) {
+            return;
+        }
+        m_settings.startAtLogin = enabled;
+    }
+    persistSettings();
     emit stateChanged();
 }
 
@@ -301,4 +341,11 @@ bool ClipboardWatcher::swapClipboardTemporarily(const QString &text, const QStri
     });
 
     return true;
+}
+
+void ClipboardWatcher::persistSettings() {
+    if (!m_store) {
+        return;
+    }
+    m_store->save(m_settings);
 }

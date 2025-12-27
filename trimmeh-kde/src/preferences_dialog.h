@@ -36,6 +36,7 @@ private:
     QCheckBox *m_keepBlank = nullptr;
     QCheckBox *m_stripBox = nullptr;
     QCheckBox *m_trimPrompts = nullptr;
+    QCheckBox *m_startAtLogin = nullptr;
 
     QRadioButton *m_low = nullptr;
     QRadioButton *m_normal = nullptr;

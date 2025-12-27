@@ -7,10 +7,18 @@
 #include <QObject>
 #include <QTimer>
 
+class SettingsStore;
+class AutostartManager;
+
 class ClipboardWatcher : public QObject {
     Q_OBJECT
 public:
-    ClipboardWatcher(KlipperBridge *bridge, TrimCore *core, const Settings &settings, QObject *parent = nullptr);
+    ClipboardWatcher(KlipperBridge *bridge,
+                     TrimCore *core,
+                     const Settings &settings,
+                     SettingsStore *store = nullptr,
+                     AutostartManager *autostart = nullptr,
+                     QObject *parent = nullptr);
 
     bool autoTrimEnabled() const { return m_settings.autoTrimEnabled; }
     void setAutoTrimEnabled(bool enabled);
@@ -20,12 +28,14 @@ public:
     bool trimPrompts() const { return m_settings.trimPrompts; }
     int maxLines() const { return m_settings.maxLines; }
     QString aggressiveness() const { return m_settings.aggressiveness; }
+    bool startAtLogin() const { return m_settings.startAtLogin; }
 
     void setKeepBlankLines(bool enabled);
     void setStripBoxChars(bool enabled);
     void setTrimPrompts(bool enabled);
     void setMaxLines(int maxLines);
     void setAggressiveness(const QString &level);
+    void setStartAtLogin(bool enabled);
 
     QString lastSummary() const { return m_lastSummary; }
     QString lastOriginal() const { return m_lastOriginal; }
@@ -53,10 +63,13 @@ private:
     QString ellipsize(const QString &text, int limit) const;
     QString hashText(const QString &text) const;
     bool swapClipboardTemporarily(const QString &text, const QString &previous);
+    void persistSettings();
 
     KlipperBridge *m_bridge = nullptr;
     TrimCore *m_core = nullptr;
     Settings m_settings;
+    SettingsStore *m_store = nullptr;
+    AutostartManager *m_autostart = nullptr;
     QTimer m_debounce;
     quint64 m_gen = 0;
     quint64 m_pendingGen = 0;
