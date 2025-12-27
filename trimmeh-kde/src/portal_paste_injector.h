@@ -3,6 +3,7 @@
 #include <QObject>
 #include <QDBusConnection>
 #include <QDBusInterface>
+#include <QVariantMap>
 
 class PortalPasteInjector : public QObject {
     Q_OBJECT
@@ -37,6 +38,9 @@ public:
 signals:
     void stateChanged();
 
+private slots:
+    void onSessionClosed(const QVariantMap &details);
+
 private:
     void updateState(State state, const QString &error = QString());
     void clearSession();
@@ -47,7 +51,6 @@ private:
     void handleCreateSessionResponse(uint response, const QVariantMap &results);
     void handleSelectDevicesResponse(uint response, const QVariantMap &results);
     void handleStartResponse(uint response, const QVariantMap &results);
-    void onSessionClosed(const QVariantMap &details);
 
     bool sendKeycode(int keycode, uint state);
     bool sendShiftInsert();
