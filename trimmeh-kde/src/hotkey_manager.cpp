@@ -20,6 +20,7 @@ HotkeyManager::HotkeyManager(ClipboardWatcher *watcher, QObject *parent)
     , m_watcher(watcher)
 {
     m_pasteTrimmed = new QAction(QStringLiteral("Paste Trimmed"), this);
+    m_pasteTrimmed->setObjectName(QStringLiteral("paste_trimmed"));
     connect(m_pasteTrimmed, &QAction::triggered, this, [this]() {
         if (m_watcher) {
             m_watcher->pasteTrimmed();
@@ -27,6 +28,7 @@ HotkeyManager::HotkeyManager(ClipboardWatcher *watcher, QObject *parent)
     });
 
     m_pasteOriginal = new QAction(QStringLiteral("Paste Original"), this);
+    m_pasteOriginal->setObjectName(QStringLiteral("paste_original"));
     connect(m_pasteOriginal, &QAction::triggered, this, [this]() {
         if (m_watcher) {
             m_watcher->pasteOriginal();
@@ -34,6 +36,7 @@ HotkeyManager::HotkeyManager(ClipboardWatcher *watcher, QObject *parent)
     });
 
     m_toggleAutoTrim = new QAction(QStringLiteral("Toggle Auto-Trim"), this);
+    m_toggleAutoTrim->setObjectName(QStringLiteral("toggle_auto_trim"));
     connect(m_toggleAutoTrim, &QAction::triggered, this, [this]() {
         if (m_watcher) {
             m_watcher->setAutoTrimEnabled(!m_watcher->autoTrimEnabled());
