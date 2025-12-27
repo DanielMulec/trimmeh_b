@@ -26,12 +26,12 @@ Implemented and verified on **Plasma 6.5.4**:
   - General: Auto‑trim, Keep blank lines, Strip box chars, Strip prompts. “Extra clipboard fallbacks” + “Start at Login” are present but disabled.
   - Aggressiveness: Low/Normal/High with live preview (Before/After).
 - **Manual paste swap**: clipboard swap → user paste → timed restore works (no keystroke injection yet).
+- **Settings persistence**: QSettings persists toggles + aggressiveness + max-lines.
+- **Autostart wiring**: “Start at Login” creates/removes `~/.config/autostart/trimmeh-kde.desktop`.
 
 Not yet implemented:
 - **Paste injection** (portal permission + actual keystroke injection).
 - **Hotkeys** (KGlobalAccel).
-- **Autostart** toggle + persistence.
-- **Settings persistence** (currently in‑memory only; no QSettings storage).
 - **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
 - **Permission callouts** for paste/input access.
 
@@ -131,7 +131,7 @@ Status: **Done** (now runs inside the tray app)
 **Phase 2 — Tray UI + Preferences**
 - Tray menu, preview, toggles, actions.
 - Preferences window with tabs (General / Aggressiveness / Shortcuts / About).
-Status: **Tray menu done (minimal)**; **Preferences implemented** (General + Aggressiveness + About; Shortcuts placeholder; no persistence)
+Status: **Tray menu done (minimal)**; **Preferences implemented** (General + Aggressiveness + About; Shortcuts placeholder; settings persisted)
 
 **Phase 3 — Manual paste parity**
 - `Paste Trimmed` and `Paste Original` using swap → paste → restore.
@@ -142,7 +142,16 @@ Status: **Swap/restore done**; **portal paste injection + permission UX pending*
 - Parity test checklist and manual test plan.
 - Vector tests for the JS core.
 - Autostart and config persistence.
-Status: **Pending**
+Status: **Autostart + persistence done**; **QA checklist + vectors pending**
+
+---
+
+## 3.5) Suggested next steps (priority order)
+1. **Hotkeys (KGlobalAccel)** + shortcuts UI wiring; store bindings in QSettings.
+2. **Portal paste injection** with permission UX + passive “Paste now” hint fallback.
+3. **Restore delay**: revert to 200 ms (or make configurable once injection exists).
+4. **Parity UI polish**: frontmost app label, strike‑through preview, stats badges.
+5. **QA pass**: manual checklist + add a minimal integration test plan for KDE.
 
 ---
 
