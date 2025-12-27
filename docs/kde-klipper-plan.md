@@ -7,7 +7,7 @@ Goal: **full Trimmy parity (functionality + UI + UX)** on KDE/Plasma, using Klip
 
 ---
 
-## 0) Current status (2025-12-26)
+## 0) Current status (2025-12-27)
 
 Implemented and verified on **Plasma 6.5.4**:
 - **Phase 0 probe**: `trimmeh-kde-probe` can read/write via Klipper DBus and receives `clipboardHistoryUpdated`.
@@ -19,15 +19,21 @@ Implemented and verified on **Plasma 6.5.4**:
   - Restore last copy
   - Auto‑Trim toggle
   - Last preview line
+  - Settings…
   - Quit
-- **Manual paste swap**: clipboard swap → user paste → restore works.
+- **Preferences window (Qt Widgets)**:
+  - Tabs: General, Aggressiveness, Shortcuts (placeholder), About.
+  - General: Auto‑trim, Keep blank lines, Strip box chars, Strip prompts. “Extra clipboard fallbacks” + “Start at Login” are present but disabled.
+  - Aggressiveness: Low/Normal/High with live preview (Before/After).
+- **Manual paste swap**: clipboard swap → user paste → timed restore works (no keystroke injection yet).
 
 Not yet implemented:
 - **Paste injection** (portal permission + actual keystroke injection).
-- **Settings window** (General / Aggressiveness / Shortcuts / About).
 - **Hotkeys** (KGlobalAccel).
-- **Autostart** toggle.
+- **Autostart** toggle + persistence.
+- **Settings persistence** (currently in‑memory only; no QSettings storage).
 - **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
+- **Permission callouts** for paste/input access.
 
 Temporary deviations:
 - **Paste restore delay** is currently **1200 ms** (to make manual timing easy). Trimmy parity target is **200 ms**. We should return to 200 ms or make it configurable once paste injection exists.
@@ -125,7 +131,7 @@ Status: **Done** (now runs inside the tray app)
 **Phase 2 — Tray UI + Preferences**
 - Tray menu, preview, toggles, actions.
 - Preferences window with tabs (General / Aggressiveness / Shortcuts / About).
-Status: **Tray menu done (minimal)**; **Preferences pending**
+Status: **Tray menu done (minimal)**; **Preferences implemented** (General + Aggressiveness + About; Shortcuts placeholder; no persistence)
 
 **Phase 3 — Manual paste parity**
 - `Paste Trimmed` and `Paste Original` using swap → paste → restore.
