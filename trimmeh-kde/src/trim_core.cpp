@@ -12,12 +12,32 @@ QString formatJsError(const QJSValue &error, const QString &sourcePath) {
     }
     return QStringLiteral("line %1: %2").arg(line).arg(message);
 }
+
+constexpr const char kPolyfills[] = R"JS(
+(function() {
+  if (!String.prototype.trimStart) {
+    String.prototype.trimStart = function() { return this.replace(/^\s+/, ''); };
+  }
+  if (!String.prototype.trimEnd) {
+    String.prototype.trimEnd = function() { return this.replace(/\s+$/, ''); };
+  }
+})();
+)JS";
 }
 
 bool TrimCore::load(const QString &jsPath, QString *errorMessage) {
     QJSValue global = m_engine.globalObject();
     if (global.property(QStringLiteral("globalThis")).isUndefined()) {
         global.setProperty(QStringLiteral("globalThis"), global);
+    }
+
+    QJSValue polyfills = m_engine.evaluate(QString::fromLatin1(kPolyfills),
+                                           QStringLiteral("trimmeh-kde-polyfills.js"));
+    if (polyfills.isError()) {
+        if (errorMessage) {
+            *errorMessage = formatJsError(polyfills, QStringLiteral("trimmeh-kde-polyfills.js"));
+        }
+        return false;
     }
 
     QFile file(jsPath);
