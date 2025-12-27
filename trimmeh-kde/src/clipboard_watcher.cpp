@@ -5,6 +5,7 @@
 #include "settings_store.h"
 
 #include <QCryptographicHash>
+#include <QDateTime>
 #include <QDebug>
 #include <QTimer>
 
@@ -200,6 +201,10 @@ void ClipboardWatcher::process(quint64 genAtSchedule) {
         return;
     }
 
+    if (shouldIgnoreRestoreGuard(incomingHash)) {
+        return;
+    }
+
     if (!m_settings.autoTrimEnabled) {
         return;
     }
@@ -279,7 +284,16 @@ bool ClipboardWatcher::pasteTrimmed() {
 
     const bool swapped = swapClipboardTemporarily(result.output, previous);
     if (swapped && m_injector) {
-        m_injector->injectPaste();
+        const int delayMs = qMax(0, m_settings.pasteInjectDelayMs);
+        QTimer::singleShot(delayMs, this, [this]() {
+            if (!m_injector) {
+                return;
+            }
+            const auto result = m_injector->injectPaste();
+            if (result != PortalPasteInjector::PasteResult::Injected) {
+                qInfo() << "[trimmeh-kde] portal inject result" << static_cast<int>(result);
+            }
+        });
     }
     return swapped;
 }
@@ -318,7 +332,16 @@ bool ClipboardWatcher::pasteOriginal() {
 
     const bool swapped = swapClipboardTemporarily(original, previous);
     if (swapped && m_injector) {
-        m_injector->injectPaste();
+        const int delayMs = qMax(0, m_settings.pasteInjectDelayMs);
+        QTimer::singleShot(delayMs, this, [this]() {
+            if (!m_injector) {
+                return;
+            }
+            const auto result = m_injector->injectPaste();
+            if (result != PortalPasteInjector::PasteResult::Injected) {
+                qInfo() << "[trimmeh-kde] portal inject result" << static_cast<int>(result);
+            }
+        });
     }
     return swapped;
 }
@@ -337,6 +360,7 @@ bool ClipboardWatcher::restoreLastCopy() {
     const QString original = m_lastOriginal;
     m_lastTrimmed.clear();
     updateSummary(original);
+    setRestoreGuard(original, 1500);
     m_lastWrittenHash = hashText(original);
 
     if (!m_bridge->setClipboardText(original, &error)) {
@@ -401,6 +425,7 @@ bool ClipboardWatcher::swapClipboardTemporarily(const QString &text, const QStri
             return;
         }
         QString err;
+        setRestoreGuard(previous, 1500);
         m_lastWrittenHash = hashText(previous);
         if (!m_bridge->setClipboardText(previous, &err)) {
             qWarning().noquote() << "[trimmeh-kde]" << err;
@@ -415,4 +440,28 @@ void ClipboardWatcher::persistSettings() {
         return;
     }
     m_store->save(m_settings);
+}
+
+void ClipboardWatcher::setRestoreGuard(const QString &text, int durationMs) {
+    m_restoreGuardHash = hashText(text);
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    m_restoreGuardExpiresMs = nowMs + qMax(0, durationMs);
+}
+
+bool ClipboardWatcher::shouldIgnoreRestoreGuard(const QString &hash) {
+    if (m_restoreGuardHash.isEmpty() || m_restoreGuardExpiresMs == 0) {
+        return false;
+    }
+    const qint64 nowMs = QDateTime::currentMSecsSinceEpoch();
+    if (nowMs > m_restoreGuardExpiresMs) {
+        m_restoreGuardHash.clear();
+        m_restoreGuardExpiresMs = 0;
+        return false;
+    }
+    if (hash == m_restoreGuardHash) {
+        return true;
+    }
+    m_restoreGuardHash.clear();
+    m_restoreGuardExpiresMs = 0;
+    return false;
 }

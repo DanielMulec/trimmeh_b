@@ -11,6 +11,7 @@ struct Settings {
     QString aggressiveness = QStringLiteral("normal");
     int graceDelayMs = 80;
     int pasteRestoreDelayMs = 1200;
+    int pasteInjectDelayMs = 120;
     bool startAtLogin = false;
     bool pasteTrimmedHotkeyEnabled = true;
     bool pasteOriginalHotkeyEnabled = false;

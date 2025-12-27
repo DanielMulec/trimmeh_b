@@ -78,6 +78,8 @@ private:
     QString hashText(const QString &text) const;
     bool swapClipboardTemporarily(const QString &text, const QString &previous);
     void persistSettings();
+    void setRestoreGuard(const QString &text, int durationMs);
+    bool shouldIgnoreRestoreGuard(const QString &hash);
 
     KlipperBridge *m_bridge = nullptr;
     TrimCore *m_core = nullptr;
@@ -89,6 +91,8 @@ private:
     quint64 m_gen = 0;
     quint64 m_pendingGen = 0;
     QString m_lastWrittenHash;
+    QString m_restoreGuardHash;
+    qint64 m_restoreGuardExpiresMs = 0;
     QString m_lastOriginal;
     QString m_lastTrimmed;
     QString m_lastSummary;
