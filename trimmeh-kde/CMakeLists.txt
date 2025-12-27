@@ -43,6 +43,8 @@ add_executable(trimmeh-kde
     src/clipboard_watcher.h
     src/klipper_bridge.cpp
     src/klipper_bridge.h
+    src/preferences_dialog.cpp
+    src/preferences_dialog.h
     src/settings.h
     src/tray_app.cpp
     src/tray_app.h

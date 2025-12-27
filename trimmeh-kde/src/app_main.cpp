@@ -57,7 +57,7 @@ int main(int argc, char **argv) {
         return 5;
     }
 
-    TrayApp tray(&watcher);
+    TrayApp tray(&watcher, &core);
 
     qInfo() << "[trimmeh-kde] Listening for clipboardHistoryUpdated...";
     return app.exec();

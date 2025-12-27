@@ -23,6 +23,46 @@ void ClipboardWatcher::setAutoTrimEnabled(bool enabled) {
     emit stateChanged();
 }
 
+void ClipboardWatcher::setKeepBlankLines(bool enabled) {
+    if (m_settings.keepBlankLines == enabled) {
+        return;
+    }
+    m_settings.keepBlankLines = enabled;
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setStripBoxChars(bool enabled) {
+    if (m_settings.stripBoxChars == enabled) {
+        return;
+    }
+    m_settings.stripBoxChars = enabled;
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setTrimPrompts(bool enabled) {
+    if (m_settings.trimPrompts == enabled) {
+        return;
+    }
+    m_settings.trimPrompts = enabled;
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setMaxLines(int maxLines) {
+    if (m_settings.maxLines == maxLines) {
+        return;
+    }
+    m_settings.maxLines = maxLines;
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setAggressiveness(const QString &level) {
+    if (m_settings.aggressiveness == level) {
+        return;
+    }
+    m_settings.aggressiveness = level;
+    emit stateChanged();
+}
+
 void ClipboardWatcher::onClipboardHistoryUpdated() {
     if (!m_enabled || !m_bridge || !m_core) {
         return;

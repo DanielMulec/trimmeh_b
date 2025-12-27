@@ -1,13 +1,16 @@
 #include "tray_app.h"
 
+#include "preferences_dialog.h"
+
 #include <KStatusNotifierItem>
 #include <QAction>
 #include <QApplication>
 #include <QMenu>
 
-TrayApp::TrayApp(ClipboardWatcher *watcher, QObject *parent)
+TrayApp::TrayApp(ClipboardWatcher *watcher, TrimCore *core, QObject *parent)
     : QObject(parent)
     , m_watcher(watcher)
+    , m_core(core)
 {
     m_item = new KStatusNotifierItem(QStringLiteral("trimmeh-kde"), this);
     m_item->setCategory(KStatusNotifierItem::ApplicationStatus);
@@ -59,6 +62,16 @@ TrayApp::TrayApp(ClipboardWatcher *watcher, QObject *parent)
     });
 
     m_menu->addSeparator();
+
+    auto *settings = m_menu->addAction(QStringLiteral("Settings..."));
+    connect(settings, &QAction::triggered, this, [this]() {
+        if (!m_prefs) {
+            m_prefs = new PreferencesDialog(m_watcher, m_core);
+        }
+        m_prefs->show();
+        m_prefs->raise();
+        m_prefs->activateWindow();
+    });
 
     m_quit = m_menu->addAction(QStringLiteral("Quit"));
     connect(m_quit, &QAction::triggered, qApp, &QCoreApplication::quit);

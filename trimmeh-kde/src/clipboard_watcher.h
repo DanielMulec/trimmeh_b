@@ -15,6 +15,18 @@ public:
     bool autoTrimEnabled() const { return m_settings.autoTrimEnabled; }
     void setAutoTrimEnabled(bool enabled);
 
+    bool keepBlankLines() const { return m_settings.keepBlankLines; }
+    bool stripBoxChars() const { return m_settings.stripBoxChars; }
+    bool trimPrompts() const { return m_settings.trimPrompts; }
+    int maxLines() const { return m_settings.maxLines; }
+    QString aggressiveness() const { return m_settings.aggressiveness; }
+
+    void setKeepBlankLines(bool enabled);
+    void setStripBoxChars(bool enabled);
+    void setTrimPrompts(bool enabled);
+    void setMaxLines(int maxLines);
+    void setAggressiveness(const QString &level);
+
     QString lastSummary() const { return m_lastSummary; }
     QString lastOriginal() const { return m_lastOriginal; }
     QString lastTrimmed() const { return m_lastTrimmed; }
