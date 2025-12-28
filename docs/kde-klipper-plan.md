@@ -7,13 +7,13 @@ Goal: **full Trimmy parity (functionality + UI + UX)** on KDE/Plasma, using Klip
 
 ---
 
-## 0) Current status (2025-12-27)
+## 0) Current status (2025-12-28)
 
 Implemented and verified on **Plasma 6.5.4**:
 - **Phase 0 probe**: `trimmeh-kde-probe` can read/write via Klipper DBus and receives `clipboardHistoryUpdated`.
 - **Auto-trim**: working via Klipper DBus with debounce + self-write hash guard.
 - **JS core**: `trimmeh-core-js` bundled for KDE (QJSEngine) via `trimmeh-core-js/src/kde-entry.ts`.
-- **Tray UI (minimal)**: KStatusNotifierItem menu with:
+- **Tray UI (minimal)**: KStatusNotifierItem menu with permission callout (when portal not ready) plus:
   - Paste Trimmed (High)
   - Paste Original
   - Restore last copy
@@ -23,22 +23,28 @@ Implemented and verified on **Plasma 6.5.4**:
   - Quit
 - **Preferences window (Qt Widgets)**:
   - Tabs: General, Aggressiveness, Shortcuts (wired), About.
-  - General: Auto‑trim, Keep blank lines, Strip box chars, Strip prompts, Start at Login. “Extra clipboard fallbacks” is present but disabled.
+  - General: Auto‑trim, Keep blank lines, Strip box chars, Strip prompts, Paste timing (restore delay), Start at Login, Quit. “Extra clipboard fallbacks” is present but disabled.
   - Aggressiveness: Low/Normal/High with live preview (Before/After).
-- **Manual paste swap**: clipboard swap → inject paste → timed restore works.
-- **Settings persistence**: QSettings persists toggles + aggressiveness + max-lines.
+- **Manual paste swap**: clipboard swap → portal paste injection (Shift+Insert → Ctrl+V fallback) after a short delay → timed restore.
+- **Settings persistence**: QSettings persists auto‑trim, keep blank lines, strip box chars, strip prompts, max lines, aggressiveness, start‑at‑login, paste inject delay, hotkey toggles + sequences, and portal restore tokens (paste restore delay is per‑session only).
 - **Autostart wiring**: “Start at Login” creates/removes `~/.config/autostart/trimmeh-kde.desktop`.
 - **Portal paste injection**: xdg-desktop-portal RemoteDesktop session + keyboard injection (Shift+Insert → Ctrl+V fallback).
 - **Permission UX**: tray + settings callout with “Grant Permission”.
-- **Global hotkeys**: KGlobalAccel wired + shortcuts tab (persisted).
+- **Global hotkeys**: KGlobalAccel wired + shortcuts tab (persisted; no defaults assigned yet).
 - **Restore safety**: restore guard prevents auto-trim loops after manual paste/restore.
-- **Configurable restore delay**: preference for clipboard restore timing.
+- **Configurable restore delay**: preference for clipboard restore timing (per‑session).
 
 Not yet implemented:
 - **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
+- **Passive “Paste now” hint** when portal permission is denied/unavailable.
+- **Permission callout “Open Settings” action** (tray/prefs only offer “Grant Permission” today).
+- **Tray menu “About” / update rows** from Trimmy.
+- **Preferences: CLI installer section + update controls** (and Email link in About).
+- **Extra clipboard fallbacks** functionality (toggle exists but is disabled).
 
 Temporary deviations:
-- **Paste restore delay** is currently **1200 ms** (to make manual timing easy). Trimmy parity target is **200 ms**. We should return to 200 ms or make it configurable once paste injection exists.
+- **Paste restore delay** defaults to **1200 ms** (per‑session, configurable 50–2000 ms). Trimmy parity target is **200 ms**.
+- **Paste inject delay** is fixed at **120 ms** (persisted but not exposed in the UI).
 
 ---
 
@@ -107,7 +113,7 @@ Preferences window: Qt Widgets or QML, but **match Trimmy’s layout and copy** 
 ### E. Paste injection (Wayland)
 For **Paste Trimmed/Original** parity:
 - Use **xdg-desktop-portal RemoteDesktop** for input injection.
-- If permission not granted: still swap clipboard, show a passive “Paste now” hint, then restore.
+- If permission not granted: still swap clipboard and request permission; no passive “Paste now” hint yet, then restore.
 
 ### F. Hotkeys and autostart
 Use `KGlobalAccel` for global shortcuts and an autostart desktop entry toggle.
@@ -197,6 +203,21 @@ Preview details:
 - Paste Original hotkey enabled: **false**
 - Auto‑Trim toggle hotkey enabled: **false**
 
+### B.1 KDE current defaults (from code)
+- Aggressiveness: **normal**
+- Auto‑trim enabled: **true**
+- Keep blank lines: **false**
+- Strip box chars: **true**
+- Strip prompts: **true**
+- Max lines: **10**
+- Grace delay: **80 ms** (fixed)
+- Paste restore delay: **1200 ms** (per‑session, configurable 50–2000 ms)
+- Paste inject delay: **120 ms** (persisted, not exposed in UI)
+- Start at login: **false**
+- Paste Trimmed hotkey enabled: **true** (sequence empty by default)
+- Paste Original hotkey enabled: **false** (sequence empty by default)
+- Auto‑Trim toggle hotkey enabled: **false** (sequence empty by default)
+
 ### C. Settings window (tabs)
 Tab view with fixed size: **410 × 484**.
 
@@ -206,9 +227,12 @@ Tab view with fixed size: **410 × 484**.
   - “Auto‑trim enabled”
   - “Keep blank lines”
   - “Remove box drawing chars (│┃)”
+  - “Strip prompts”
   - “Use extra clipboard fallbacks”
   - (Debug builds only) “Enable debug tools”
-- CLI installer section:
+- Paste timing:
+  - “Restore delay” (50–2000 ms).
+- CLI installer section (not implemented yet in KDE):
   - Button: “Install CLI”
   - Text: “Install `trimmy` into /usr/local/bin and /opt/homebrew/bin.”
   KDE adaptation: install `trimmeh` into `~/.local/bin` (or system‑wide if permitted).
@@ -236,8 +260,8 @@ Tab view with fixed size: **410 × 484**.
 **About**
 - App icon and version
 - “Paste‑once, run‑once clipboard cleaner for terminal snippets.”
-- Links: GitHub, Website, Twitter, Email
-- Update controls:
+- Links: GitHub, Website, Twitter, Email (Email link not implemented yet in KDE)
+- Update controls (not implemented yet in KDE):
   - “Check for updates automatically” toggle
   - “Check for Updates…” button (if updater available)
 - Copyright line
@@ -250,11 +274,12 @@ Tab view with fixed size: **410 × 484**.
 
 ### D. Behavioral parity (timing + messaging)
 - **Grace delay**: 80 ms before reading clipboard after change.
- - **Paste restore delay**: 200 ms after paste (Trimmy parity target).  
-   Current KDE build uses **1200 ms** for easier manual timing; revert or make configurable once paste injection lands.
+- **Paste restore delay**: configurable 50–2000 ms, default **1200 ms** (per‑session). Trimmy parity target is **200 ms**.
+- **Paste inject delay**: **120 ms** before portal paste injection.
 - **Permission message on failure**:
   - Trimmy uses: “Enable Accessibility to let Trimmy paste (System Settings → Privacy & Security → Accessibility).”
   - KDE adaptation: mention portal permission path.
+- **No passive “Paste now” hint** on permission failure yet (tray/prefs callout only).
 - **“Nothing to paste.”** on manual paste when clipboard is empty.
 - **“No actions yet”** in preview when nothing has ever been trimmed.
 
