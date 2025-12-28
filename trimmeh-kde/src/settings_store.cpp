@@ -10,6 +10,7 @@ constexpr const char kTrimPrompts[] = "trimPrompts";
 constexpr const char kMaxLines[] = "maxLines";
 constexpr const char kAggressiveness[] = "aggressiveness";
 constexpr const char kStartAtLogin[] = "startAtLogin";
+constexpr const char kPasteRestoreDelayMs[] = "pasteRestoreDelayMs";
 constexpr const char kPasteInjectDelayMs[] = "pasteInjectDelayMs";
 constexpr const char kPasteTrimmedHotkeyEnabled[] = "pasteTrimmedHotkeyEnabled";
 constexpr const char kPasteOriginalHotkeyEnabled[] = "pasteOriginalHotkeyEnabled";
@@ -29,6 +30,7 @@ Settings SettingsStore::load() const {
     settings.maxLines = store.value(kMaxLines, settings.maxLines).toInt();
     settings.aggressiveness = store.value(kAggressiveness, settings.aggressiveness).toString();
     settings.startAtLogin = store.value(kStartAtLogin, settings.startAtLogin).toBool();
+    settings.pasteRestoreDelayMs = store.value(kPasteRestoreDelayMs, settings.pasteRestoreDelayMs).toInt();
     settings.pasteInjectDelayMs = store.value(kPasteInjectDelayMs, settings.pasteInjectDelayMs).toInt();
     settings.pasteTrimmedHotkeyEnabled = store.value(kPasteTrimmedHotkeyEnabled, settings.pasteTrimmedHotkeyEnabled).toBool();
     settings.pasteOriginalHotkeyEnabled = store.value(kPasteOriginalHotkeyEnabled, settings.pasteOriginalHotkeyEnabled).toBool();
@@ -48,6 +50,7 @@ void SettingsStore::save(const Settings &settings) const {
     store.setValue(kMaxLines, settings.maxLines);
     store.setValue(kAggressiveness, settings.aggressiveness);
     store.setValue(kStartAtLogin, settings.startAtLogin);
+    store.setValue(kPasteRestoreDelayMs, settings.pasteRestoreDelayMs);
     store.setValue(kPasteInjectDelayMs, settings.pasteInjectDelayMs);
     store.setValue(kPasteTrimmedHotkeyEnabled, settings.pasteTrimmedHotkeyEnabled);
     store.setValue(kPasteOriginalHotkeyEnabled, settings.pasteOriginalHotkeyEnabled);

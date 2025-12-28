@@ -26,13 +26,13 @@ Implemented and verified on **Plasma 6.5.4**:
   - General: Auto‑trim, Keep blank lines, Strip box chars, Strip prompts, Paste timing (restore delay), Start at Login, Quit. “Extra clipboard fallbacks” is present but disabled.
   - Aggressiveness: Low/Normal/High with live preview (Before/After).
 - **Manual paste swap**: clipboard swap → portal paste injection (Shift+Insert → Ctrl+V fallback) after a short delay → timed restore.
-- **Settings persistence**: QSettings persists auto‑trim, keep blank lines, strip box chars, strip prompts, max lines, aggressiveness, start‑at‑login, paste inject delay, hotkey toggles + sequences, and portal restore tokens (paste restore delay is per‑session only).
+- **Settings persistence**: QSettings persists auto‑trim, keep blank lines, strip box chars, strip prompts, max lines, aggressiveness, start‑at‑login, paste restore delay, paste inject delay, hotkey toggles + sequences, and portal restore tokens.
 - **Autostart wiring**: “Start at Login” creates/removes `~/.config/autostart/trimmeh-kde.desktop`.
 - **Portal paste injection**: xdg-desktop-portal RemoteDesktop session + keyboard injection (Shift+Insert → Ctrl+V fallback).
 - **Permission UX**: tray + settings callout with “Grant Permission”.
 - **Global hotkeys**: KGlobalAccel wired + shortcuts tab (persisted; no defaults assigned yet).
 - **Restore safety**: restore guard prevents auto-trim loops after manual paste/restore.
-- **Configurable restore delay**: preference for clipboard restore timing (per‑session).
+- **Configurable restore delay**: preference for clipboard restore timing (persisted).
 
 Not yet implemented:
 - **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
@@ -43,7 +43,7 @@ Not yet implemented:
 - **Extra clipboard fallbacks** functionality (toggle exists but is disabled).
 
 Temporary deviations:
-- **Paste restore delay** defaults to **1200 ms** (per‑session, configurable 50–2000 ms). Trimmy parity target is **200 ms**.
+- **Paste restore delay** defaults to **1200 ms** (configurable 50–2000 ms). Trimmy parity target is **200 ms**.
 - **Paste inject delay** is fixed at **120 ms** (persisted but not exposed in the UI).
 
 ---
@@ -211,7 +211,7 @@ Preview details:
 - Strip prompts: **true**
 - Max lines: **10**
 - Grace delay: **80 ms** (fixed)
-- Paste restore delay: **1200 ms** (per‑session, configurable 50–2000 ms)
+- Paste restore delay: **1200 ms** (configurable 50–2000 ms)
 - Paste inject delay: **120 ms** (persisted, not exposed in UI)
 - Start at login: **false**
 - Paste Trimmed hotkey enabled: **true** (sequence empty by default)
@@ -274,7 +274,7 @@ Tab view with fixed size: **410 × 484**.
 
 ### D. Behavioral parity (timing + messaging)
 - **Grace delay**: 80 ms before reading clipboard after change.
-- **Paste restore delay**: configurable 50–2000 ms, default **1200 ms** (per‑session). Trimmy parity target is **200 ms**.
+- **Paste restore delay**: configurable 50–2000 ms, default **1200 ms**. Trimmy parity target is **200 ms**.
 - **Paste inject delay**: **120 ms** before portal paste injection.
 - **Permission message on failure**:
   - Trimmy uses: “Enable Accessibility to let Trimmy paste (System Settings → Privacy & Security → Accessibility).”
