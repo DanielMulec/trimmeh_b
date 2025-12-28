@@ -31,6 +31,7 @@ public:
     int maxLines() const { return m_settings.maxLines; }
     QString aggressiveness() const { return m_settings.aggressiveness; }
     bool startAtLogin() const { return m_settings.startAtLogin; }
+    int pasteRestoreDelayMs() const { return m_settings.pasteRestoreDelayMs; }
     bool pasteTrimmedHotkeyEnabled() const { return m_settings.pasteTrimmedHotkeyEnabled; }
     bool pasteOriginalHotkeyEnabled() const { return m_settings.pasteOriginalHotkeyEnabled; }
     bool toggleAutoTrimHotkeyEnabled() const { return m_settings.toggleAutoTrimHotkeyEnabled; }
@@ -44,6 +45,7 @@ public:
     void setMaxLines(int maxLines);
     void setAggressiveness(const QString &level);
     void setStartAtLogin(bool enabled);
+    void setPasteRestoreDelayMs(int delayMs);
     void setPasteTrimmedHotkeyEnabled(bool enabled);
     void setPasteOriginalHotkeyEnabled(bool enabled);
     void setToggleAutoTrimHotkeyEnabled(bool enabled);

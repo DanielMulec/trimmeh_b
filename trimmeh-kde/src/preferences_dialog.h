@@ -14,6 +14,7 @@ class QKeySequenceEdit;
 class QPushButton;
 class QGroupBox;
 class PortalPasteInjector;
+class QSpinBox;
 
 class PreferencesDialog : public QDialog {
     Q_OBJECT
@@ -44,6 +45,7 @@ private:
     QGroupBox *m_permissionGroup = nullptr;
     QLabel *m_permissionLabel = nullptr;
     QPushButton *m_permissionButton = nullptr;
+    QSpinBox *m_restoreDelay = nullptr;
 
     QCheckBox *m_autoTrim = nullptr;
     QCheckBox *m_keepBlank = nullptr;

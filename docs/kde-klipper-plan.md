@@ -32,6 +32,7 @@ Implemented and verified on **Plasma 6.5.4**:
 - **Permission UX**: tray + settings callout with “Grant Permission”.
 - **Global hotkeys**: KGlobalAccel wired + shortcuts tab (persisted).
 - **Restore safety**: restore guard prevents auto-trim loops after manual paste/restore.
+- **Configurable restore delay**: preference for clipboard restore timing.
 
 Not yet implemented:
 - **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
@@ -148,10 +149,9 @@ Status: **Autostart + persistence done**; **QA checklist + vectors pending**
 ---
 
 ## 3.5) Suggested next steps (priority order)
-1. **Restore delay**: revert to 200 ms (or make configurable once injection exists).
-2. **Parity UI polish**: frontmost app label, strike‑through preview, stats badges.
-3. **QA pass**: manual checklist + add a minimal integration test plan for KDE.
-4. **Portal polish**: optional passive “Paste now” hint if permission is denied/unavailable.
+1. **Parity UI polish**: frontmost app label, strike‑through preview, stats badges.
+2. **QA pass**: manual checklist + add a minimal integration test plan for KDE.
+3. **Portal polish**: optional passive “Paste now” hint if permission is denied/unavailable.
 
 ---
 

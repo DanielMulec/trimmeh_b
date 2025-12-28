@@ -9,6 +9,11 @@
 #include <QDebug>
 #include <QTimer>
 
+namespace {
+constexpr int kMinRestoreDelayMs = 50;
+constexpr int kMaxRestoreDelayMs = 2000;
+}
+
 ClipboardWatcher::ClipboardWatcher(KlipperBridge *bridge,
                                    TrimCore *core,
                                    const Settings &settings,
@@ -103,6 +108,16 @@ void ClipboardWatcher::setStartAtLogin(bool enabled) {
         }
         m_settings.startAtLogin = enabled;
     }
+    persistSettings();
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setPasteRestoreDelayMs(int delayMs) {
+    const int clamped = qBound(kMinRestoreDelayMs, delayMs, kMaxRestoreDelayMs);
+    if (m_settings.pasteRestoreDelayMs == clamped) {
+        return;
+    }
+    m_settings.pasteRestoreDelayMs = clamped;
     persistSettings();
     emit stateChanged();
 }

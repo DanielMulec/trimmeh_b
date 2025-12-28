@@ -16,6 +16,7 @@
 #include <QPushButton>
 #include <QRadioButton>
 #include <QSignalBlocker>
+#include <QSpinBox>
 #include <QTabWidget>
 #include <QUrl>
 #include <QVBoxLayout>
@@ -108,6 +109,20 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
         updateAggressivenessPreview();
     });
 
+    auto *timingGroup = new QGroupBox(QStringLiteral("Paste timing"), panel);
+    auto *timingLayout = new QFormLayout(timingGroup);
+    m_restoreDelay = new QSpinBox(timingGroup);
+    m_restoreDelay->setRange(50, 2000);
+    m_restoreDelay->setSingleStep(50);
+    m_restoreDelay->setSuffix(QStringLiteral(" ms"));
+    m_restoreDelay->setToolTip(QStringLiteral("How long to keep the temporary clipboard before restoring it."));
+    connect(m_restoreDelay, QOverload<int>::of(&QSpinBox::valueChanged), this, [this](int value) {
+        if (m_watcher) {
+            m_watcher->setPasteRestoreDelayMs(value);
+        }
+    });
+    timingLayout->addRow(QStringLiteral("Restore delay"), m_restoreDelay);
+
     auto *fallbacks = new QCheckBox(QStringLiteral("Use extra clipboard fallbacks"), panel);
     fallbacks->setToolTip(QStringLiteral("Try alternate clipboard formats when plain text is missing."));
     fallbacks->setEnabled(false);
@@ -128,6 +143,7 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     layout->addWidget(m_keepBlank);
     layout->addWidget(m_stripBox);
     layout->addWidget(m_trimPrompts);
+    layout->addWidget(timingGroup);
     layout->addWidget(fallbacks);
     layout->addWidget(m_startAtLogin);
     layout->addStretch(1);
@@ -316,6 +332,10 @@ void PreferencesDialog::refreshFromWatcher() {
     if (m_stripBox) m_stripBox->setChecked(m_watcher->stripBoxChars());
     if (m_trimPrompts) m_trimPrompts->setChecked(m_watcher->trimPrompts());
     if (m_startAtLogin) m_startAtLogin->setChecked(m_watcher->startAtLogin());
+    if (m_restoreDelay) {
+        const QSignalBlocker block(m_restoreDelay);
+        m_restoreDelay->setValue(m_watcher->pasteRestoreDelayMs());
+    }
 
     const QString aggr = m_watcher->aggressiveness();
     if (m_low) m_low->setChecked(aggr == QStringLiteral("low"));
