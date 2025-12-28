@@ -31,6 +31,7 @@ Implemented and verified on **Plasma 6.5.4**:
 - **Portal paste injection**: xdg-desktop-portal RemoteDesktop session + keyboard injection (Shift+Insert → Ctrl+V fallback).
 - **Permission UX**: tray + settings callout with “Grant Permission”.
 - **Global hotkeys**: KGlobalAccel wired + shortcuts tab (persisted).
+- **Restore safety**: restore guard prevents auto-trim loops after manual paste/restore.
 
 Not yet implemented:
 - **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
