@@ -148,8 +148,13 @@ bool registerWithPortal(QString *errorMessage) {
     QVariantMap options;
     QDBusReply<void> reply = iface.call(QStringLiteral("Register"), appId(), options);
     if (!reply.isValid()) {
+        const QString message = reply.error().message();
+        if (message.contains(QStringLiteral("Connection already associated with an application ID"),
+                             Qt::CaseInsensitive)) {
+            return true;
+        }
         if (errorMessage) {
-            *errorMessage = QStringLiteral("Portal Registry register failed: %1").arg(reply.error().message());
+            *errorMessage = QStringLiteral("Portal Registry register failed: %1").arg(message);
         }
         return false;
     }

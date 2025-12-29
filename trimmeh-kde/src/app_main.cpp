@@ -25,13 +25,13 @@ QString coreBundlePath() {
 }
 
 int main(int argc, char **argv) {
+    QGuiApplication::setDesktopFileName(AppIdentity::appId());
     QApplication app(argc, argv);
     QCoreApplication::setOrganizationName("Trimmeh");
     QCoreApplication::setOrganizationDomain("trimmeh.dev");
     QApplication::setApplicationName("trimmeh-kde");
     QApplication::setApplicationVersion("0.0.1");
     QApplication::setQuitOnLastWindowClosed(false);
-    QGuiApplication::setDesktopFileName(AppIdentity::appId());
 
     QCommandLineParser parser;
     parser.setApplicationDescription("Trimmeh KDE (Klipper D-Bus auto-trim)");
