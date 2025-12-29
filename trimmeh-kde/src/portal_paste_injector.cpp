@@ -114,6 +114,8 @@ PortalPasteInjector::PortalPasteInjector(QObject *parent)
                     QStringLiteral("RemoteDesktop portal unavailable: %1").arg(m_iface.lastError().message()));
         return;
     }
+
+    refreshPreauthorization();
 }
 
 QString PortalPasteInjector::preauthCommand() const {
@@ -175,6 +177,7 @@ void PortalPasteInjector::requestPreauthorization() {
                 const QString output = QString::fromUtf8(m_preauthProcess->readAll());
                 if (status == QProcess::NormalExit && exitCode == 0) {
                     updatePreauthState(PreauthState::Succeeded, QStringLiteral("Permanent permission set."));
+                    refreshPreauthorization();
                     if (m_state != State::Ready && m_state != State::Unavailable) {
                         requestPermission();
                     }
@@ -183,6 +186,7 @@ void PortalPasteInjector::requestPreauthorization() {
                         ? QStringLiteral("Failed to set permanent permission.")
                         : QStringLiteral("Failed to set permanent permission: %1").arg(output.trimmed());
                     updatePreauthState(PreauthState::Failed, message);
+                    refreshPreauthorization();
                 }
                 m_preauthProcess->deleteLater();
                 m_preauthProcess = nullptr;
@@ -201,6 +205,68 @@ void PortalPasteInjector::requestPreauthorization() {
             });
 
     m_preauthProcess->start();
+}
+
+void PortalPasteInjector::refreshPreauthorization() {
+    if (m_preauthCheckProcess) {
+        return;
+    }
+
+    const QString flatpak = flatpakPath();
+    if (flatpak.isEmpty()) {
+        updatePreauthStatus(PreauthStatus::Unavailable,
+                            QStringLiteral("flatpak is not installed. Run: %1").arg(preauthCommand()));
+        return;
+    }
+
+    m_preauthCheckProcess = new QProcess(this);
+    m_preauthCheckProcess->setProgram(flatpak);
+    m_preauthCheckProcess->setArguments({
+        QStringLiteral("permissions"),
+        QStringLiteral("kde-authorized"),
+        QStringLiteral("remote-desktop"),
+    });
+    m_preauthCheckProcess->setProcessChannelMode(QProcess::MergedChannels);
+
+    connect(m_preauthCheckProcess,
+            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this,
+            [this](int exitCode, QProcess::ExitStatus status) {
+                const QString output = QString::fromUtf8(m_preauthCheckProcess->readAll());
+                if (status == QProcess::NormalExit && exitCode == 0) {
+                    const QString appId = AppIdentity::appId();
+                    const QStringList lines = output.split('\n', Qt::SkipEmptyParts);
+                    bool found = false;
+                    for (const QString &line : lines) {
+                        if (line.contains(appId) && line.contains(QStringLiteral("yes"))) {
+                            found = true;
+                            break;
+                        }
+                    }
+                    updatePreauthStatus(found ? PreauthStatus::Present : PreauthStatus::Absent);
+                } else {
+                    const QString message = output.trimmed().isEmpty()
+                        ? QStringLiteral("Failed to read portal permissions.")
+                        : QStringLiteral("Failed to read portal permissions: %1").arg(output.trimmed());
+                    updatePreauthStatus(PreauthStatus::Error, message);
+                }
+                m_preauthCheckProcess->deleteLater();
+                m_preauthCheckProcess = nullptr;
+            });
+
+    connect(m_preauthCheckProcess,
+            &QProcess::errorOccurred,
+            this,
+            [this](QProcess::ProcessError) {
+                updatePreauthStatus(PreauthStatus::Error,
+                                    QStringLiteral("Failed to run flatpak permissions."));
+                if (m_preauthCheckProcess) {
+                    m_preauthCheckProcess->deleteLater();
+                    m_preauthCheckProcess = nullptr;
+                }
+            });
+
+    m_preauthCheckProcess->start();
 }
 
 PortalPasteInjector::PasteResult PortalPasteInjector::injectPaste() {
@@ -249,6 +315,18 @@ void PortalPasteInjector::updatePreauthState(PreauthState state, const QString &
     m_preauthMessage = message;
     if (changed) {
         emit preauthStateChanged();
+    }
+}
+
+void PortalPasteInjector::updatePreauthStatus(PreauthStatus status, const QString &message) {
+    const bool changed = (m_preauthStatus != status) || (m_preauthMessage != message);
+    m_preauthStatus = status;
+    m_preauthMessage = message;
+    if (changed) {
+        if (m_preauthStatus == PreauthStatus::Present && m_state == State::Idle) {
+            requestPermission();
+        }
+        emit preauthStatusChanged();
     }
 }
 

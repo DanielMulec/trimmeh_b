@@ -56,6 +56,7 @@ PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher,
     if (m_injector) {
         connect(m_injector, &PortalPasteInjector::stateChanged, this, &PreferencesDialog::refreshPermission);
         connect(m_injector, &PortalPasteInjector::preauthStateChanged, this, &PreferencesDialog::refreshPermission);
+        connect(m_injector, &PortalPasteInjector::preauthStatusChanged, this, &PreferencesDialog::refreshPermission);
     }
     refreshFromWatcher();
     refreshPermission();
@@ -444,6 +445,17 @@ void PreferencesDialog::refreshPermission() {
         return;
     }
 
+    const auto preauthStatus = m_injector->preauthStatus();
+    if (preauthStatus == PortalPasteInjector::PreauthStatus::Present) {
+        m_permissionLabel->setText(QStringLiteral("Permanent permission set. Paste will work when used."));
+        m_permissionButton->setVisible(false);
+        m_permissionPermanentButton->setVisible(false);
+        m_permissionStatus->setText(QString());
+        m_permissionSettingsButton->setEnabled(true);
+        m_permissionGroup->setVisible(true);
+        return;
+    }
+
     if (m_injector->isRequesting()) {
         m_permissionLabel->setText(QStringLiteral("Waiting for permission dialog..."));
         m_permissionButton->setEnabled(false);
@@ -463,6 +475,8 @@ void PreferencesDialog::refreshPermission() {
 
     const bool canPreauth = m_injector->canPreauthorize();
     const auto preauthState = m_injector->preauthState();
+    m_permissionButton->setVisible(true);
+    m_permissionPermanentButton->setVisible(true);
     m_permissionPermanentButton->setEnabled(canPreauth
                                             && preauthState != PortalPasteInjector::PreauthState::Working);
 
@@ -483,7 +497,9 @@ void PreferencesDialog::refreshPermission() {
 
     QString status = m_injector->preauthMessage();
     if (status.isEmpty()) {
-        if (!canPreauth) {
+        if (preauthStatus == PortalPasteInjector::PreauthStatus::Unknown) {
+            status = QStringLiteral("Checking permanent permission...");
+        } else if (!canPreauth) {
             status = QStringLiteral("flatpak is required to set permanent permissions.\nRun: %1")
                          .arg(m_injector->preauthCommand());
         } else {

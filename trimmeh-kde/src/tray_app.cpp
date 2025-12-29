@@ -109,6 +109,7 @@ TrayApp::TrayApp(ClipboardWatcher *watcher,
     if (m_injector) {
         connect(m_injector, &PortalPasteInjector::stateChanged, this, &TrayApp::updatePermissionState);
         connect(m_injector, &PortalPasteInjector::preauthStateChanged, this, &TrayApp::updatePermissionState);
+        connect(m_injector, &PortalPasteInjector::preauthStatusChanged, this, &TrayApp::updatePermissionState);
         updatePermissionState();
     }
 
@@ -164,6 +165,23 @@ void TrayApp::updatePermissionState() {
     }
 
     const bool canPreauth = m_injector->canPreauthorize();
+    const auto preauthStatus = m_injector->preauthStatus();
+
+    if (preauthStatus == PortalPasteInjector::PreauthStatus::Present) {
+        if (m_injector->isReady()) {
+            m_permissionInfo->setVisible(false);
+            m_permissionGrant->setVisible(false);
+            m_permissionPermanent->setVisible(false);
+            m_permissionSeparator->setVisible(false);
+            return;
+        }
+        m_permissionInfo->setText(QStringLiteral("Permanent permission set. Paste will work when used."));
+        m_permissionInfo->setVisible(true);
+        m_permissionGrant->setVisible(false);
+        m_permissionPermanent->setVisible(false);
+        m_permissionSeparator->setVisible(true);
+        return;
+    }
 
     if (m_injector->isRequesting()) {
         m_permissionInfo->setText(QStringLiteral("Waiting for permission..."));

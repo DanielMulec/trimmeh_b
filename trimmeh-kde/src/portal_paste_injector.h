@@ -27,6 +27,14 @@ public:
         Unavailable,
     };
 
+    enum class PreauthStatus {
+        Unknown,
+        Present,
+        Absent,
+        Unavailable,
+        Error,
+    };
+
     enum class PasteResult {
         Injected,
         PermissionRequired,
@@ -44,16 +52,20 @@ public:
 
     PreauthState preauthState() const { return m_preauthState; }
     QString preauthMessage() const { return m_preauthMessage; }
+    PreauthStatus preauthStatus() const { return m_preauthStatus; }
+    bool preauthGranted() const { return m_preauthStatus == PreauthStatus::Present; }
     QString preauthCommand() const;
     bool canPreauthorize() const;
 
     void requestPermission();
     void requestPreauthorization();
+    void refreshPreauthorization();
     PasteResult injectPaste();
 
 signals:
     void stateChanged();
     void preauthStateChanged();
+    void preauthStatusChanged();
 
 private slots:
     void onSessionClosed(const QVariantMap &details);
@@ -70,6 +82,7 @@ private:
     void handleStartResponse(uint response, const QVariantMap &results);
 
     void updatePreauthState(PreauthState state, const QString &message = QString());
+    void updatePreauthStatus(PreauthStatus status, const QString &message = QString());
     QString flatpakPath() const;
 
     bool sendKeycode(int keycode, uint state);
@@ -89,4 +102,6 @@ private:
     PreauthState m_preauthState = PreauthState::Idle;
     QString m_preauthMessage;
     QProcess *m_preauthProcess = nullptr;
+    PreauthStatus m_preauthStatus = PreauthStatus::Unknown;
+    QProcess *m_preauthCheckProcess = nullptr;
 };
