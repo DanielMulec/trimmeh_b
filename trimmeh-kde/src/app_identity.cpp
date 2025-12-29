@@ -68,10 +68,10 @@ bool ensureDesktopFile(QString *errorMessage) {
         return false;
     }
 
-    const QString existing = QStandardPaths::locate(QStandardPaths::ApplicationsLocation,
-                                                    desktopFileName(),
-                                                    QStandardPaths::LocateFile);
-    if (!existing.isEmpty() && existing != path) {
+    const QString existingPath = QStandardPaths::locate(QStandardPaths::ApplicationsLocation,
+                                                        desktopFileName(),
+                                                        QStandardPaths::LocateFile);
+    if (!existingPath.isEmpty() && existingPath != path) {
         return true;
     }
 
@@ -85,10 +85,10 @@ bool ensureDesktopFile(QString *errorMessage) {
     }
 
     const QString contents = desktopFileContents();
-    QFile existing(path);
-    if (existing.exists()) {
-        if (existing.open(QIODevice::ReadOnly)) {
-            const QByteArray current = existing.readAll();
+    QFile existingFile(path);
+    if (existingFile.exists()) {
+        if (existingFile.open(QIODevice::ReadOnly)) {
+            const QByteArray current = existingFile.readAll();
             if (current == contents.toUtf8()) {
                 return true;
             }
