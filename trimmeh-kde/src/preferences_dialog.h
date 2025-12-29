@@ -44,7 +44,6 @@ private:
 
     QGroupBox *m_permissionGroup = nullptr;
     QLabel *m_permissionLabel = nullptr;
-    QPushButton *m_permissionButton = nullptr;
     QPushButton *m_permissionPermanentButton = nullptr;
     QPushButton *m_permissionSettingsButton = nullptr;
     QLabel *m_permissionStatus = nullptr;

@@ -148,7 +148,8 @@ void PortalPasteInjector::requestPreauthorization() {
     const QString flatpak = flatpakPath();
     if (flatpak.isEmpty()) {
         updatePreauthState(PreauthState::Unavailable,
-                           QStringLiteral("flatpak is not installed. Run: %1").arg(preauthCommand()));
+                           QStringLiteral("flatpak is required to enable hotkeys permanently. Run: %1")
+                               .arg(preauthCommand()));
         return;
     }
 
@@ -168,7 +169,7 @@ void PortalPasteInjector::requestPreauthorization() {
     });
     m_preauthProcess->setProcessChannelMode(QProcess::MergedChannels);
 
-    updatePreauthState(PreauthState::Working, QStringLiteral("Setting permanent permission..."));
+    updatePreauthState(PreauthState::Working, QStringLiteral("Enabling hotkeys permanently..."));
 
     connect(m_preauthProcess,
             QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
@@ -176,15 +177,15 @@ void PortalPasteInjector::requestPreauthorization() {
             [this](int exitCode, QProcess::ExitStatus status) {
                 const QString output = QString::fromUtf8(m_preauthProcess->readAll());
                 if (status == QProcess::NormalExit && exitCode == 0) {
-                    updatePreauthState(PreauthState::Succeeded, QStringLiteral("Permanent permission set."));
+                    updatePreauthState(PreauthState::Succeeded, QStringLiteral("Hotkeys enabled permanently."));
                     refreshPreauthorization();
                     if (m_state != State::Ready && m_state != State::Unavailable) {
                         requestPermission();
                     }
                 } else {
                     const QString message = output.trimmed().isEmpty()
-                        ? QStringLiteral("Failed to set permanent permission.")
-                        : QStringLiteral("Failed to set permanent permission: %1").arg(output.trimmed());
+                        ? QStringLiteral("Failed to enable hotkeys permanently.")
+                        : QStringLiteral("Failed to enable hotkeys permanently: %1").arg(output.trimmed());
                     updatePreauthState(PreauthState::Failed, message);
                     refreshPreauthorization();
                 }
@@ -215,7 +216,8 @@ void PortalPasteInjector::refreshPreauthorization() {
     const QString flatpak = flatpakPath();
     if (flatpak.isEmpty()) {
         updatePreauthStatus(PreauthStatus::Unavailable,
-                            QStringLiteral("flatpak is not installed. Run: %1").arg(preauthCommand()));
+                            QStringLiteral("flatpak is required to enable hotkeys permanently. Run: %1")
+                                .arg(preauthCommand()));
         return;
     }
 
@@ -246,8 +248,8 @@ void PortalPasteInjector::refreshPreauthorization() {
                     updatePreauthStatus(found ? PreauthStatus::Present : PreauthStatus::Absent);
                 } else {
                     const QString message = output.trimmed().isEmpty()
-                        ? QStringLiteral("Failed to read portal permissions.")
-                        : QStringLiteral("Failed to read portal permissions: %1").arg(output.trimmed());
+                        ? QStringLiteral("Failed to read hotkey permission status.")
+                        : QStringLiteral("Failed to read hotkey permission status: %1").arg(output.trimmed());
                     updatePreauthStatus(PreauthStatus::Error, message);
                 }
                 m_preauthCheckProcess->deleteLater();

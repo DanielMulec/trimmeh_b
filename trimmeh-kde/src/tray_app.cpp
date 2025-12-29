@@ -26,15 +26,9 @@ TrayApp::TrayApp(ClipboardWatcher *watcher,
     m_menu = new QMenu();
 
     if (m_injector) {
-        m_permissionInfo = m_menu->addAction(QStringLiteral("Input permission needed to paste"));
+        m_permissionInfo = m_menu->addAction(QStringLiteral("Enable hotkeys to allow paste shortcuts"));
         m_permissionInfo->setEnabled(false);
-        m_permissionGrant = m_menu->addAction(QStringLiteral("Grant Permission"));
-        connect(m_permissionGrant, &QAction::triggered, this, [this]() {
-            if (m_injector) {
-                m_injector->requestPermission();
-            }
-        });
-        m_permissionPermanent = m_menu->addAction(QStringLiteral("Make Permission Permanent"));
+        m_permissionPermanent = m_menu->addAction(QStringLiteral("Enable Hotkeys Permanently"));
         connect(m_permissionPermanent, &QAction::triggered, this, [this]() {
             if (m_injector) {
                 m_injector->requestPreauthorization();
@@ -43,7 +37,7 @@ TrayApp::TrayApp(ClipboardWatcher *watcher,
         m_permissionSeparator = m_menu->addSeparator();
     }
 
-    m_pasteTrimmed = m_menu->addAction(QStringLiteral("Paste Trimmed (High)"));
+    m_pasteTrimmed = m_menu->addAction(QStringLiteral("Paste Trimmed"));
     connect(m_pasteTrimmed, &QAction::triggered, this, [this]() {
         if (m_watcher) {
             m_watcher->pasteTrimmed();
@@ -124,6 +118,7 @@ void TrayApp::updateSummary(const QString &summary) {
         ? QStringLiteral("Last: No actions yet")
         : QStringLiteral("Last: %1").arg(summary);
     m_lastSummary->setText(text);
+    updatePasteStats();
 }
 
 void TrayApp::updateState() {
@@ -140,17 +135,53 @@ void TrayApp::updateState() {
     if (m_restoreLast) {
         m_restoreLast->setEnabled(m_watcher->hasLastOriginal());
     }
+    updatePasteStats();
+}
+
+void TrayApp::updatePasteStats() {
+    if (!m_watcher || !m_pasteTrimmed || !m_pasteOriginal) {
+        return;
+    }
+
+    const QString original = m_watcher->lastOriginal();
+    const QString trimmed = m_watcher->lastTrimmed();
+    const int originalLen = original.size();
+    const int trimmedLen = trimmed.size();
+    int removed = originalLen - trimmedLen;
+    if (removed < 0) {
+        removed = 0;
+    }
+
+    if (!trimmed.isEmpty()) {
+        m_pasteTrimmed->setText(QStringLiteral("Paste Trimmed \u00b7 %1 chars \u00b7 %2 trimmed")
+                                    .arg(trimmedLen)
+                                    .arg(removed));
+        if (!original.isEmpty()) {
+            m_pasteOriginal->setText(QStringLiteral("Paste Original \u00b7 %1 chars").arg(originalLen));
+        } else {
+            m_pasteOriginal->setText(QStringLiteral("Paste Original"));
+        }
+        return;
+    }
+
+    if (!original.isEmpty()) {
+        m_pasteTrimmed->setText(QStringLiteral("Paste Trimmed"));
+        m_pasteOriginal->setText(QStringLiteral("Paste Original \u00b7 %1 chars").arg(originalLen));
+        return;
+    }
+
+    m_pasteTrimmed->setText(QStringLiteral("Paste Trimmed"));
+    m_pasteOriginal->setText(QStringLiteral("Paste Original"));
 }
 
 void TrayApp::updatePermissionState() {
-    if (!m_injector || !m_permissionInfo || !m_permissionGrant || !m_permissionPermanent || !m_permissionSeparator) {
+    if (!m_injector || !m_permissionInfo || !m_permissionPermanent || !m_permissionSeparator) {
         return;
     }
 
     if (!m_injector->isAvailable()) {
-        m_permissionInfo->setText(QStringLiteral("Paste permission portal unavailable"));
+        m_permissionInfo->setText(QStringLiteral("Hotkey permission portal unavailable"));
         m_permissionInfo->setVisible(true);
-        m_permissionGrant->setVisible(false);
         m_permissionPermanent->setVisible(false);
         m_permissionSeparator->setVisible(true);
         return;
@@ -158,7 +189,6 @@ void TrayApp::updatePermissionState() {
 
     if (m_injector->isReady()) {
         m_permissionInfo->setVisible(false);
-        m_permissionGrant->setVisible(false);
         m_permissionPermanent->setVisible(false);
         m_permissionSeparator->setVisible(false);
         return;
@@ -170,24 +200,20 @@ void TrayApp::updatePermissionState() {
     if (preauthStatus == PortalPasteInjector::PreauthStatus::Present) {
         if (m_injector->isReady()) {
             m_permissionInfo->setVisible(false);
-            m_permissionGrant->setVisible(false);
             m_permissionPermanent->setVisible(false);
             m_permissionSeparator->setVisible(false);
             return;
         }
-        m_permissionInfo->setText(QStringLiteral("Permanent permission set. Paste will work when used."));
+        m_permissionInfo->setText(QStringLiteral("Hotkeys enabled permanently. Paste will work when used."));
         m_permissionInfo->setVisible(true);
-        m_permissionGrant->setVisible(false);
         m_permissionPermanent->setVisible(false);
         m_permissionSeparator->setVisible(true);
         return;
     }
 
     if (m_injector->isRequesting()) {
-        m_permissionInfo->setText(QStringLiteral("Waiting for permission..."));
+        m_permissionInfo->setText(QStringLiteral("Waiting for hotkey permission..."));
         m_permissionInfo->setVisible(true);
-        m_permissionGrant->setVisible(true);
-        m_permissionGrant->setEnabled(false);
         m_permissionPermanent->setVisible(true);
         m_permissionPermanent->setEnabled(canPreauth
                                           && m_injector->preauthState()
@@ -197,10 +223,8 @@ void TrayApp::updatePermissionState() {
     }
 
     if (m_injector->state() == PortalPasteInjector::State::Error && !m_injector->lastError().isEmpty()) {
-        m_permissionInfo->setText(QStringLiteral("Portal error: %1").arg(m_injector->lastError()));
+        m_permissionInfo->setText(QStringLiteral("Hotkey permission error: %1").arg(m_injector->lastError()));
         m_permissionInfo->setVisible(true);
-        m_permissionGrant->setVisible(true);
-        m_permissionGrant->setEnabled(true);
         m_permissionPermanent->setVisible(true);
         m_permissionPermanent->setEnabled(canPreauth
                                           && m_injector->preauthState()
@@ -209,10 +233,12 @@ void TrayApp::updatePermissionState() {
         return;
     }
 
-    m_permissionInfo->setText(QStringLiteral("Input permission needed to paste"));
+    if (!canPreauth) {
+        m_permissionInfo->setText(QStringLiteral("Hotkeys need a one-time system prompt. Use a paste action once to grant permission."));
+    } else {
+        m_permissionInfo->setText(QStringLiteral("Enable hotkeys to allow paste shortcuts"));
+    }
     m_permissionInfo->setVisible(true);
-    m_permissionGrant->setVisible(true);
-    m_permissionGrant->setEnabled(true);
     m_permissionPermanent->setVisible(true);
     m_permissionPermanent->setEnabled(canPreauth
                                       && m_injector->preauthState()

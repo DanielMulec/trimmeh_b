@@ -66,17 +66,11 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     auto *panel = new QWidget(this);
     auto *layout = new QVBoxLayout(panel);
 
-    m_permissionGroup = new QGroupBox(QStringLiteral("Paste permission"), panel);
+    m_permissionGroup = new QGroupBox(QStringLiteral("Hotkey permission"), panel);
     auto *permLayout = new QVBoxLayout(m_permissionGroup);
-    m_permissionLabel = new QLabel(QStringLiteral("Input permission is required to paste automatically."), m_permissionGroup);
+    m_permissionLabel = new QLabel(QStringLiteral("Enable hotkeys to allow paste shortcuts."), m_permissionGroup);
     m_permissionLabel->setWordWrap(true);
-    m_permissionButton = new QPushButton(QStringLiteral("Grant Permission"), m_permissionGroup);
-    connect(m_permissionButton, &QPushButton::clicked, this, [this]() {
-        if (m_injector) {
-            m_injector->requestPermission();
-        }
-    });
-    m_permissionPermanentButton = new QPushButton(QStringLiteral("Make Permission Permanent"), m_permissionGroup);
+    m_permissionPermanentButton = new QPushButton(QStringLiteral("Enable Hotkeys Permanently"), m_permissionGroup);
     connect(m_permissionPermanentButton, &QPushButton::clicked, this, [this]() {
         if (m_injector) {
             m_injector->requestPreauthorization();
@@ -115,7 +109,6 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     m_permissionStatus->setWordWrap(true);
     permLayout->addWidget(m_permissionLabel);
     auto *permButtons = new QHBoxLayout();
-    permButtons->addWidget(m_permissionButton);
     permButtons->addWidget(m_permissionPermanentButton);
     permButtons->addWidget(m_permissionSettingsButton);
     permButtons->addStretch(1);
@@ -426,7 +419,7 @@ void PreferencesDialog::refreshFromWatcher() {
 }
 
 void PreferencesDialog::refreshPermission() {
-    if (!m_permissionGroup || !m_permissionLabel || !m_permissionButton
+    if (!m_permissionGroup || !m_permissionLabel
         || !m_permissionPermanentButton || !m_permissionSettingsButton || !m_permissionStatus) {
         return;
     }
@@ -436,8 +429,7 @@ void PreferencesDialog::refreshPermission() {
     }
 
     if (!m_injector->isAvailable()) {
-        m_permissionLabel->setText(QStringLiteral("Input permission portal is unavailable on this system."));
-        m_permissionButton->setEnabled(false);
+        m_permissionLabel->setText(QStringLiteral("Hotkey permission portal is unavailable on this system."));
         m_permissionPermanentButton->setEnabled(false);
         m_permissionSettingsButton->setEnabled(false);
         m_permissionStatus->setText(QString());
@@ -447,8 +439,7 @@ void PreferencesDialog::refreshPermission() {
 
     const auto preauthStatus = m_injector->preauthStatus();
     if (preauthStatus == PortalPasteInjector::PreauthStatus::Present) {
-        m_permissionLabel->setText(QStringLiteral("Permanent permission set. Paste will work when used."));
-        m_permissionButton->setVisible(false);
+        m_permissionLabel->setText(QStringLiteral("Hotkeys enabled permanently. Paste will work when used."));
         m_permissionPermanentButton->setVisible(false);
         m_permissionStatus->setText(QString());
         m_permissionSettingsButton->setEnabled(true);
@@ -457,25 +448,19 @@ void PreferencesDialog::refreshPermission() {
     }
 
     if (m_injector->isRequesting()) {
-        m_permissionLabel->setText(QStringLiteral("Waiting for permission dialog..."));
-        m_permissionButton->setEnabled(false);
+        m_permissionLabel->setText(QStringLiteral("Waiting for hotkey permission dialog..."));
     } else if (m_injector->isReady()) {
-        m_permissionLabel->setText(QStringLiteral("Input permission granted for this session."));
-        m_permissionButton->setEnabled(false);
+        m_permissionLabel->setText(QStringLiteral("Hotkey permission granted for this session."));
     } else if (m_injector->state() == PortalPasteInjector::State::Error && !m_injector->lastError().isEmpty()) {
-        m_permissionLabel->setText(QStringLiteral("Portal error: %1").arg(m_injector->lastError()));
-        m_permissionButton->setEnabled(true);
+        m_permissionLabel->setText(QStringLiteral("Hotkey permission error: %1").arg(m_injector->lastError()));
     } else if (m_injector->state() == PortalPasteInjector::State::Denied) {
-        m_permissionLabel->setText(QStringLiteral("Permission was denied. Click Grant Permission to retry."));
-        m_permissionButton->setEnabled(true);
+        m_permissionLabel->setText(QStringLiteral("Permission was denied. Use a paste action to retry."));
     } else {
-        m_permissionLabel->setText(QStringLiteral("Input permission is required to paste automatically."));
-        m_permissionButton->setEnabled(true);
+        m_permissionLabel->setText(QStringLiteral("Enable hotkeys to allow paste shortcuts."));
     }
 
     const bool canPreauth = m_injector->canPreauthorize();
     const auto preauthState = m_injector->preauthState();
-    m_permissionButton->setVisible(true);
     m_permissionPermanentButton->setVisible(true);
     m_permissionPermanentButton->setEnabled(canPreauth
                                             && preauthState != PortalPasteInjector::PreauthState::Working);
@@ -500,25 +485,25 @@ void PreferencesDialog::refreshPermission() {
         if (preauthStatus == PortalPasteInjector::PreauthStatus::Unknown) {
             status = QStringLiteral("Checking permanent permission...");
         } else if (!canPreauth) {
-            status = QStringLiteral("flatpak is required to set permanent permissions.\nRun: %1")
-                         .arg(m_injector->preauthCommand());
+            status = QStringLiteral("This system can’t store permanent hotkey permission.\n"
+                                     "Use a paste action once to grant permission when prompted.");
         } else {
         switch (preauthState) {
         case PortalPasteInjector::PreauthState::Working:
-            status = QStringLiteral("Setting permanent permission...");
+            status = QStringLiteral("Enabling hotkeys permanently...");
             break;
         case PortalPasteInjector::PreauthState::Succeeded:
-            status = QStringLiteral("Permanent permission set. You should not be asked again.");
+            status = QStringLiteral("Hotkeys enabled permanently. You should not be asked again.");
             break;
         case PortalPasteInjector::PreauthState::Failed:
-            status = QStringLiteral("Failed to set permanent permission.");
+            status = QStringLiteral("Failed to enable hotkeys permanently.");
             break;
         case PortalPasteInjector::PreauthState::Unavailable:
-            status = QStringLiteral("flatpak is required to set permanent permissions.\nRun: %1")
-                         .arg(m_injector->preauthCommand());
+            status = QStringLiteral("This system can’t store permanent hotkey permission.\n"
+                                     "Use a paste action once to grant permission when prompted.");
             break;
         case PortalPasteInjector::PreauthState::Idle:
-            status = QStringLiteral("Make permission permanent to avoid future prompts.");
+            status = QStringLiteral("Enable hotkeys permanently to avoid future prompts.");
             break;
         }
         }

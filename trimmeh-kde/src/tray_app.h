@@ -24,13 +24,14 @@ private slots:
     void updatePermissionState();
 
 private:
+    void updatePasteStats();
+
     ClipboardWatcher *m_watcher = nullptr;
     TrimCore *m_core = nullptr;
     PortalPasteInjector *m_injector = nullptr;
     KStatusNotifierItem *m_item = nullptr;
     QMenu *m_menu = nullptr;
     QAction *m_permissionInfo = nullptr;
-    QAction *m_permissionGrant = nullptr;
     QAction *m_permissionPermanent = nullptr;
     QAction *m_permissionSeparator = nullptr;
     QAction *m_pasteTrimmed = nullptr;
