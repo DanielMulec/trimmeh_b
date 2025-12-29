@@ -7,7 +7,7 @@ Goal: **full Trimmy parity (functionality + UI + UX)** on KDE/Plasma, using Klip
 
 ---
 
-## 0) Current status (2025-12-28)
+## 0) Current status (2025-12-29)
 
 Implemented and verified on **Plasma 6.5.4**:
 - **Phase 0 probe**: `trimmeh-kde-probe` can read/write via Klipper DBus and receives `clipboardHistoryUpdated`.
@@ -27,9 +27,11 @@ Implemented and verified on **Plasma 6.5.4**:
   - Aggressiveness: Low/Normal/High with live preview (Before/After).
 - **Manual paste swap**: clipboard swap → portal paste injection (Shift+Insert → Ctrl+V fallback) after a short delay → timed restore.
 - **Settings persistence**: QSettings persists auto‑trim, keep blank lines, strip box chars, strip prompts, max lines, aggressiveness, start‑at‑login, paste restore delay, paste inject delay, hotkey toggles + sequences, and portal restore tokens.
-- **Autostart wiring**: “Start at Login” creates/removes `~/.config/autostart/trimmeh-kde.desktop`.
+- **Autostart wiring**: “Start at Login” creates/removes `~/.config/autostart/dev.trimmeh.TrimmehKDE.desktop` (legacy `trimmeh-kde.desktop` cleaned up).
 - **Portal paste injection**: xdg-desktop-portal RemoteDesktop session + keyboard injection (Shift+Insert → Ctrl+V fallback).
-- **Permission UX**: tray + settings callout with “Grant Permission”.
+- **App identity**: stable app ID `dev.trimmeh.TrimmehKDE`, desktop file ensured in `~/.local/share/applications`, and portal Registry registration at startup.
+- **Permission UX**: tray + settings callout with “Grant Permission”, “Make Permission Permanent”, and “Open System Settings” (best‑effort).
+- **Pre‑authorization**: uses KDE `kde-authorized` permission store via `flatpak permission-set` from the UI, checks permission store on launch, and auto‑requests session when pre‑authorized (no prompt).
 - **Global hotkeys**: KGlobalAccel wired + shortcuts tab (persisted; no defaults assigned yet).
 - **Restore safety**: restore guard prevents auto-trim loops after manual paste/restore.
 - **Configurable restore delay**: preference for clipboard restore timing (persisted).
@@ -37,7 +39,6 @@ Implemented and verified on **Plasma 6.5.4**:
 Not yet implemented:
 - **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
 - **Passive “Paste now” hint** when portal permission is denied/unavailable.
-- **Permission callout “Open Settings” action** (tray/prefs only offer “Grant Permission” today).
 - **Tray menu “About” / update rows** from Trimmy.
 - **Preferences: CLI installer section + update controls** (and Email link in About).
 - **Extra clipboard fallbacks** functionality (toggle exists but is disabled).
@@ -118,6 +119,12 @@ For **Paste Trimmed/Original** parity:
 ### F. Hotkeys and autostart
 Use `KGlobalAccel` for global shortcuts and an autostart desktop entry toggle.
 
+### G. App identity + portal pre‑authorization
+- Set a stable app ID (`dev.trimmeh.TrimmehKDE`) and ensure a matching desktop file.
+- Register with `org.freedesktop.host.portal.Registry` at startup.
+- Allow users to pre‑authorize via `flatpak permission-set kde-authorized remote-desktop dev.trimmeh.TrimmehKDE yes`.
+- On launch, check `kde-authorized` and auto‑request a session only when pre‑authorized.
+
 ---
 
 ## 3) Phased delivery plan
@@ -172,7 +179,7 @@ Layout order:
    - Title: “Accessibility needed to paste”
    - Subtitle: “Enable Trimmy in System Settings → Privacy & Security → Accessibility so ⌘V can be sent to the front app.”
    - Buttons: “Grant Accessibility”, “Open Settings”  
-   KDE adaptation: replace with portal‑specific text (“Input permission needed to paste”) and buttons (“Grant Permission”, “Open Settings”).
+   KDE adaptation: replace with portal‑specific text (“Input permission needed to paste”) and buttons (“Grant Permission”, “Make Permission Permanent”, “Open System Settings”).
 2. **Paste Trimmed to {Front App}** button
    - Shows keyboard shortcut if enabled.
    - Stats suffix: `· {N chars}` plus `· {M trimmed}` when applicable.
@@ -276,6 +283,7 @@ Tab view with fixed size: **410 × 484**.
 - **Grace delay**: 80 ms before reading clipboard after change.
 - **Paste restore delay**: configurable 50–2000 ms, default **1200 ms**. Trimmy parity target is **200 ms**.
 - **Paste inject delay**: **120 ms** before portal paste injection.
+- **Pre‑authorization**: when `kde-authorized` is present, hide permission buttons and auto‑request the session on launch (no prompt).
 - **Permission message on failure**:
   - Trimmy uses: “Enable Accessibility to let Trimmy paste (System Settings → Privacy & Security → Accessibility).”
   - KDE adaptation: mention portal permission path.
@@ -309,7 +317,6 @@ Tab view with fixed size: **410 × 484**.
 
 - Does Klipper’s D‑Bus signal always fire on all clipboard changes in Plasma 6.5.4? **Confirmed yes** via probe.
 - Does `getClipboardContents` always return text even when the clipboard holds rich content?
-- Portal permissions: best UX for “Grant Permission” on KDE/Wayland.
 - Update UX: on Linux, do we hide update UI or wire it to distro package updates?
 
 ---
