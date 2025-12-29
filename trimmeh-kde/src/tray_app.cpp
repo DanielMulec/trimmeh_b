@@ -8,6 +8,41 @@
 #include <QApplication>
 #include <QMenu>
 
+namespace {
+constexpr int kMenuPreviewLimit = 100;
+
+int truncationCount(int count, int limit) {
+    if (count <= limit || limit <= 0) {
+        return 0;
+    }
+    return (count + limit - 1) / limit - 1;
+}
+
+QString kString(int count) {
+    const double k = static_cast<double>(count) / 1000.0;
+    return k >= 10.0
+        ? QStringLiteral("%1k").arg(QString::number(k, 'f', 0))
+        : QStringLiteral("%1k").arg(QString::number(k, 'f', 1));
+}
+
+QString prettyBadge(int count, int limit, bool showTruncations) {
+    const QString chars = count >= 1000
+        ? QStringLiteral("%1 chars").arg(kString(count))
+        : QStringLiteral("%1 chars").arg(count);
+
+    if (!showTruncations || limit <= 0) {
+        return QStringLiteral(" \u00b7 %1").arg(chars);
+    }
+
+    const int truncations = truncationCount(count, limit);
+    if (truncations <= 0) {
+        return QStringLiteral(" \u00b7 %1").arg(chars);
+    }
+
+    return QStringLiteral(" \u00b7 %1 \u00b7 %2 trimmed").arg(chars).arg(truncations);
+}
+}
+
 TrayApp::TrayApp(ClipboardWatcher *watcher,
                  TrimCore *core,
                  PortalPasteInjector *injector,
@@ -147,31 +182,22 @@ void TrayApp::updatePasteStats() {
     const QString trimmed = m_watcher->lastTrimmed();
     const int originalLen = original.size();
     const int trimmedLen = trimmed.size();
-    int removed = originalLen - trimmedLen;
-    if (removed < 0) {
-        removed = 0;
-    }
 
+    QString trimmedSuffix;
     if (!trimmed.isEmpty()) {
-        m_pasteTrimmed->setText(QStringLiteral("Paste Trimmed \u00b7 %1 chars \u00b7 %2 trimmed")
-                                    .arg(trimmedLen)
-                                    .arg(removed));
-        if (!original.isEmpty()) {
-            m_pasteOriginal->setText(QStringLiteral("Paste Original \u00b7 %1 chars").arg(originalLen));
-        } else {
-            m_pasteOriginal->setText(QStringLiteral("Paste Original"));
+        trimmedSuffix = prettyBadge(trimmedLen, kMenuPreviewLimit, true);
+        if (!original.isEmpty() && originalLen > trimmedLen) {
+            trimmedSuffix += QStringLiteral(" \u00b7 %1 trimmed").arg(originalLen - trimmedLen);
         }
-        return;
     }
 
+    QString originalSuffix;
     if (!original.isEmpty()) {
-        m_pasteTrimmed->setText(QStringLiteral("Paste Trimmed"));
-        m_pasteOriginal->setText(QStringLiteral("Paste Original \u00b7 %1 chars").arg(originalLen));
-        return;
+        originalSuffix = prettyBadge(originalLen, kMenuPreviewLimit, false);
     }
 
-    m_pasteTrimmed->setText(QStringLiteral("Paste Trimmed"));
-    m_pasteOriginal->setText(QStringLiteral("Paste Original"));
+    m_pasteTrimmed->setText(QStringLiteral("Paste Trimmed%1").arg(trimmedSuffix));
+    m_pasteOriginal->setText(QStringLiteral("Paste Original%1").arg(originalSuffix));
 }
 
 void TrayApp::updatePermissionState() {
