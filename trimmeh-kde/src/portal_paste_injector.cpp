@@ -1,10 +1,14 @@
 #include "portal_paste_injector.h"
 
+#include "app_identity.h"
+
 #include <QDBusConnectionInterface>
 #include <QDBusObjectPath>
 #include <QDBusReply>
 #include <QDebug>
+#include <QProcess>
 #include <QSettings>
+#include <QStandardPaths>
 #include <QUuid>
 
 namespace {
@@ -112,6 +116,14 @@ PortalPasteInjector::PortalPasteInjector(QObject *parent)
     }
 }
 
+QString PortalPasteInjector::preauthCommand() const {
+    return AppIdentity::preauthCommand();
+}
+
+bool PortalPasteInjector::canPreauthorize() const {
+    return !flatpakPath().isEmpty();
+}
+
 void PortalPasteInjector::requestPermission() {
     if (m_state == State::Requesting || m_state == State::Ready) {
         return;
@@ -124,6 +136,71 @@ void PortalPasteInjector::requestPermission() {
     updateState(State::Requesting);
     clearSession();
     createSession();
+}
+
+void PortalPasteInjector::requestPreauthorization() {
+    if (m_preauthState == PreauthState::Working) {
+        return;
+    }
+
+    const QString flatpak = flatpakPath();
+    if (flatpak.isEmpty()) {
+        updatePreauthState(PreauthState::Unavailable,
+                           QStringLiteral("flatpak is not installed. Run: %1").arg(preauthCommand()));
+        return;
+    }
+
+    if (m_preauthProcess) {
+        m_preauthProcess->deleteLater();
+        m_preauthProcess = nullptr;
+    }
+
+    m_preauthProcess = new QProcess(this);
+    m_preauthProcess->setProgram(flatpak);
+    m_preauthProcess->setArguments({
+        QStringLiteral("permission-set"),
+        QStringLiteral("kde-authorized"),
+        QStringLiteral("remote-desktop"),
+        AppIdentity::appId(),
+        QStringLiteral("yes"),
+    });
+    m_preauthProcess->setProcessChannelMode(QProcess::MergedChannels);
+
+    updatePreauthState(PreauthState::Working, QStringLiteral("Setting permanent permission..."));
+
+    connect(m_preauthProcess,
+            QOverload<int, QProcess::ExitStatus>::of(&QProcess::finished),
+            this,
+            [this](int exitCode, QProcess::ExitStatus status) {
+                const QString output = QString::fromUtf8(m_preauthProcess->readAll());
+                if (status == QProcess::NormalExit && exitCode == 0) {
+                    updatePreauthState(PreauthState::Succeeded, QStringLiteral("Permanent permission set."));
+                    if (m_state != State::Ready && m_state != State::Unavailable) {
+                        requestPermission();
+                    }
+                } else {
+                    const QString message = output.trimmed().isEmpty()
+                        ? QStringLiteral("Failed to set permanent permission.")
+                        : QStringLiteral("Failed to set permanent permission: %1").arg(output.trimmed());
+                    updatePreauthState(PreauthState::Failed, message);
+                }
+                m_preauthProcess->deleteLater();
+                m_preauthProcess = nullptr;
+            });
+
+    connect(m_preauthProcess,
+            &QProcess::errorOccurred,
+            this,
+            [this](QProcess::ProcessError) {
+                updatePreauthState(PreauthState::Failed,
+                                   QStringLiteral("Failed to run flatpak. Run: %1").arg(preauthCommand()));
+                if (m_preauthProcess) {
+                    m_preauthProcess->deleteLater();
+                    m_preauthProcess = nullptr;
+                }
+            });
+
+    m_preauthProcess->start();
 }
 
 PortalPasteInjector::PasteResult PortalPasteInjector::injectPaste() {
@@ -164,6 +241,19 @@ void PortalPasteInjector::updateState(State state, const QString &error) {
     if (changed) {
         emit stateChanged();
     }
+}
+
+void PortalPasteInjector::updatePreauthState(PreauthState state, const QString &message) {
+    const bool changed = (m_preauthState != state) || (m_preauthMessage != message);
+    m_preauthState = state;
+    m_preauthMessage = message;
+    if (changed) {
+        emit preauthStateChanged();
+    }
+}
+
+QString PortalPasteInjector::flatpakPath() const {
+    return QStandardPaths::findExecutable(QStringLiteral("flatpak"));
 }
 
 void PortalPasteInjector::clearSession() {

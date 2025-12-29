@@ -31,6 +31,7 @@ private:
     QMenu *m_menu = nullptr;
     QAction *m_permissionInfo = nullptr;
     QAction *m_permissionGrant = nullptr;
+    QAction *m_permissionPermanent = nullptr;
     QAction *m_permissionSeparator = nullptr;
     QAction *m_pasteTrimmed = nullptr;
     QAction *m_pasteOriginal = nullptr;

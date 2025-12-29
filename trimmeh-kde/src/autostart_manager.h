@@ -11,4 +11,5 @@ private:
     QString desktopFilePath() const;
     QString desktopFileContents() const;
     QString quotedExecPath() const;
+    QString legacyDesktopFilePath() const;
 };

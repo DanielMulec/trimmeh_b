@@ -1,5 +1,7 @@
 #include "autostart_manager.h"
 
+#include "app_identity.h"
+
 #include <QCoreApplication>
 #include <QDir>
 #include <QFile>
@@ -8,15 +10,16 @@
 #include <QStandardPaths>
 
 namespace {
-constexpr const char kDesktopFileName[] = "trimmeh-kde.desktop";
+constexpr const char kLegacyDesktopFileName[] = "trimmeh-kde.desktop";
 }
 
 bool AutostartManager::isEnabled() const {
-    return QFile::exists(desktopFilePath());
+    return QFile::exists(desktopFilePath()) || QFile::exists(legacyDesktopFilePath());
 }
 
 bool AutostartManager::setEnabled(bool enabled, QString *errorMessage) const {
     const QString path = desktopFilePath();
+    const QString legacyPath = legacyDesktopFilePath();
     if (path.isEmpty()) {
         if (errorMessage) {
             *errorMessage = QStringLiteral("Unable to resolve autostart path.");
@@ -30,6 +33,9 @@ bool AutostartManager::setEnabled(bool enabled, QString *errorMessage) const {
                 *errorMessage = QStringLiteral("Failed to remove autostart entry: %1").arg(path);
             }
             return false;
+        }
+        if (QFile::exists(legacyPath)) {
+            QFile::remove(legacyPath);
         }
         return true;
     }
@@ -66,6 +72,10 @@ bool AutostartManager::setEnabled(bool enabled, QString *errorMessage) const {
         return false;
     }
 
+    if (QFile::exists(legacyPath)) {
+        QFile::remove(legacyPath);
+    }
+
     return true;
 }
 
@@ -74,7 +84,7 @@ QString AutostartManager::desktopFilePath() const {
     if (configDir.isEmpty()) {
         return QString();
     }
-    return QDir(configDir).filePath(QStringLiteral("autostart/%1").arg(QString::fromLatin1(kDesktopFileName)));
+    return QDir(configDir).filePath(QStringLiteral("autostart/%1").arg(AppIdentity::desktopFileName()));
 }
 
 QString AutostartManager::desktopFileContents() const {
@@ -86,6 +96,14 @@ QString AutostartManager::desktopFileContents() const {
         "Exec=%1\n"
         "Icon=edit-cut\n"
         "StartupNotify=false\n").arg(quotedExecPath());
+}
+
+QString AutostartManager::legacyDesktopFilePath() const {
+    const QString configDir = QStandardPaths::writableLocation(QStandardPaths::ConfigLocation);
+    if (configDir.isEmpty()) {
+        return QString();
+    }
+    return QDir(configDir).filePath(QStringLiteral("autostart/%1").arg(QString::fromLatin1(kLegacyDesktopFileName)));
 }
 
 QString AutostartManager::quotedExecPath() const {

@@ -34,6 +34,12 @@ TrayApp::TrayApp(ClipboardWatcher *watcher,
                 m_injector->requestPermission();
             }
         });
+        m_permissionPermanent = m_menu->addAction(QStringLiteral("Make Permission Permanent"));
+        connect(m_permissionPermanent, &QAction::triggered, this, [this]() {
+            if (m_injector) {
+                m_injector->requestPreauthorization();
+            }
+        });
         m_permissionSeparator = m_menu->addSeparator();
     }
 
@@ -102,6 +108,7 @@ TrayApp::TrayApp(ClipboardWatcher *watcher,
     }
     if (m_injector) {
         connect(m_injector, &PortalPasteInjector::stateChanged, this, &TrayApp::updatePermissionState);
+        connect(m_injector, &PortalPasteInjector::preauthStateChanged, this, &TrayApp::updatePermissionState);
         updatePermissionState();
     }
 
@@ -135,7 +142,7 @@ void TrayApp::updateState() {
 }
 
 void TrayApp::updatePermissionState() {
-    if (!m_injector || !m_permissionInfo || !m_permissionGrant || !m_permissionSeparator) {
+    if (!m_injector || !m_permissionInfo || !m_permissionGrant || !m_permissionPermanent || !m_permissionSeparator) {
         return;
     }
 
@@ -143,6 +150,7 @@ void TrayApp::updatePermissionState() {
         m_permissionInfo->setText(QStringLiteral("Paste permission portal unavailable"));
         m_permissionInfo->setVisible(true);
         m_permissionGrant->setVisible(false);
+        m_permissionPermanent->setVisible(false);
         m_permissionSeparator->setVisible(true);
         return;
     }
@@ -150,15 +158,22 @@ void TrayApp::updatePermissionState() {
     if (m_injector->isReady()) {
         m_permissionInfo->setVisible(false);
         m_permissionGrant->setVisible(false);
+        m_permissionPermanent->setVisible(false);
         m_permissionSeparator->setVisible(false);
         return;
     }
+
+    const bool canPreauth = m_injector->canPreauthorize();
 
     if (m_injector->isRequesting()) {
         m_permissionInfo->setText(QStringLiteral("Waiting for permission..."));
         m_permissionInfo->setVisible(true);
         m_permissionGrant->setVisible(true);
         m_permissionGrant->setEnabled(false);
+        m_permissionPermanent->setVisible(true);
+        m_permissionPermanent->setEnabled(canPreauth
+                                          && m_injector->preauthState()
+                                              != PortalPasteInjector::PreauthState::Working);
         m_permissionSeparator->setVisible(true);
         return;
     }
@@ -168,6 +183,10 @@ void TrayApp::updatePermissionState() {
         m_permissionInfo->setVisible(true);
         m_permissionGrant->setVisible(true);
         m_permissionGrant->setEnabled(true);
+        m_permissionPermanent->setVisible(true);
+        m_permissionPermanent->setEnabled(canPreauth
+                                          && m_injector->preauthState()
+                                              != PortalPasteInjector::PreauthState::Working);
         m_permissionSeparator->setVisible(true);
         return;
     }
@@ -176,5 +195,9 @@ void TrayApp::updatePermissionState() {
     m_permissionInfo->setVisible(true);
     m_permissionGrant->setVisible(true);
     m_permissionGrant->setEnabled(true);
+    m_permissionPermanent->setVisible(true);
+    m_permissionPermanent->setEnabled(canPreauth
+                                      && m_injector->preauthState()
+                                          != PortalPasteInjector::PreauthState::Working);
     m_permissionSeparator->setVisible(true);
 }

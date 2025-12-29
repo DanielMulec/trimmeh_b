@@ -1,3 +1,4 @@
+#include "app_identity.h"
 #include "autostart_manager.h"
 #include "clipboard_watcher.h"
 #include "hotkey_manager.h"
@@ -13,6 +14,7 @@
 #include <QDebug>
 #include <QDir>
 #include <QFileInfo>
+#include <QGuiApplication>
 #include <QSettings>
 
 namespace {
@@ -29,12 +31,22 @@ int main(int argc, char **argv) {
     QApplication::setApplicationName("trimmeh-kde");
     QApplication::setApplicationVersion("0.0.1");
     QApplication::setQuitOnLastWindowClosed(false);
+    QGuiApplication::setDesktopFileName(AppIdentity::appId());
 
     QCommandLineParser parser;
     parser.setApplicationDescription("Trimmeh KDE (Klipper D-Bus auto-trim)");
     parser.addHelpOption();
     parser.addVersionOption();
     parser.process(app);
+
+    QString identityError;
+    if (!AppIdentity::ensureDesktopFile(&identityError)) {
+        qWarning().noquote() << "[trimmeh-kde]" << identityError;
+    }
+    identityError.clear();
+    if (!AppIdentity::registerWithPortal(&identityError)) {
+        qInfo().noquote() << "[trimmeh-kde]" << identityError;
+    }
 
     const QString corePath = coreBundlePath();
     if (!QFileInfo::exists(corePath)) {

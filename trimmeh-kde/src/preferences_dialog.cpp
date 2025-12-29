@@ -14,12 +14,15 @@
 #include <QLabel>
 #include <QPlainTextEdit>
 #include <QPushButton>
+#include <QProcess>
 #include <QRadioButton>
 #include <QSignalBlocker>
 #include <QSpinBox>
+#include <QStandardPaths>
 #include <QTabWidget>
 #include <QUrl>
 #include <QVBoxLayout>
+#include <QStringList>
 
 PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher,
                                      TrimCore *core,
@@ -52,6 +55,7 @@ PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher,
     }
     if (m_injector) {
         connect(m_injector, &PortalPasteInjector::stateChanged, this, &PreferencesDialog::refreshPermission);
+        connect(m_injector, &PortalPasteInjector::preauthStateChanged, this, &PreferencesDialog::refreshPermission);
     }
     refreshFromWatcher();
     refreshPermission();
@@ -71,8 +75,51 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
             m_injector->requestPermission();
         }
     });
+    m_permissionPermanentButton = new QPushButton(QStringLiteral("Make Permission Permanent"), m_permissionGroup);
+    connect(m_permissionPermanentButton, &QPushButton::clicked, this, [this]() {
+        if (m_injector) {
+            m_injector->requestPreauthorization();
+        }
+    });
+    m_permissionSettingsButton = new QPushButton(QStringLiteral("Open System Settings"), m_permissionGroup);
+    connect(m_permissionSettingsButton, &QPushButton::clicked, this, [this]() {
+        const QStringList candidates = {
+            QStringLiteral("kcmshell6"),
+            QStringLiteral("kcmshell5"),
+            QStringLiteral("systemsettings"),
+            QStringLiteral("systemsettings6"),
+        };
+        for (const QString &candidate : candidates) {
+            const QString exec = QStandardPaths::findExecutable(candidate);
+            if (exec.isEmpty()) {
+                continue;
+            }
+            QStringList args;
+            if (candidate.startsWith(QStringLiteral("kcmshell"))) {
+                args << QStringLiteral("kcm_flatpak");
+            } else {
+                args << QStringLiteral("kcm_flatpak");
+            }
+            if (!QProcess::startDetached(exec, args)) {
+                args.clear();
+                if (QProcess::startDetached(exec, args)) {
+                    return;
+                }
+                continue;
+            }
+            return;
+        }
+    });
+    m_permissionStatus = new QLabel(QString(), m_permissionGroup);
+    m_permissionStatus->setWordWrap(true);
     permLayout->addWidget(m_permissionLabel);
-    permLayout->addWidget(m_permissionButton, 0, Qt::AlignLeft);
+    auto *permButtons = new QHBoxLayout();
+    permButtons->addWidget(m_permissionButton);
+    permButtons->addWidget(m_permissionPermanentButton);
+    permButtons->addWidget(m_permissionSettingsButton);
+    permButtons->addStretch(1);
+    permLayout->addLayout(permButtons);
+    permLayout->addWidget(m_permissionStatus);
 
     m_autoTrim = new QCheckBox(QStringLiteral("Auto-trim enabled"), panel);
     m_autoTrim->setToolTip(QStringLiteral("Automatically trim clipboard content when it looks like a command."));
@@ -378,7 +425,8 @@ void PreferencesDialog::refreshFromWatcher() {
 }
 
 void PreferencesDialog::refreshPermission() {
-    if (!m_permissionGroup || !m_permissionLabel || !m_permissionButton) {
+    if (!m_permissionGroup || !m_permissionLabel || !m_permissionButton
+        || !m_permissionPermanentButton || !m_permissionSettingsButton || !m_permissionStatus) {
         return;
     }
     if (!m_injector) {
@@ -389,35 +437,77 @@ void PreferencesDialog::refreshPermission() {
     if (!m_injector->isAvailable()) {
         m_permissionLabel->setText(QStringLiteral("Input permission portal is unavailable on this system."));
         m_permissionButton->setEnabled(false);
+        m_permissionPermanentButton->setEnabled(false);
+        m_permissionSettingsButton->setEnabled(false);
+        m_permissionStatus->setText(QString());
         m_permissionGroup->setVisible(true);
-        return;
-    }
-
-    if (m_injector->isReady()) {
-        m_permissionGroup->setVisible(false);
         return;
     }
 
     if (m_injector->isRequesting()) {
         m_permissionLabel->setText(QStringLiteral("Waiting for permission dialog..."));
         m_permissionButton->setEnabled(false);
-        m_permissionGroup->setVisible(true);
-        return;
-    }
-
-    if (m_injector->state() == PortalPasteInjector::State::Error && !m_injector->lastError().isEmpty()) {
+    } else if (m_injector->isReady()) {
+        m_permissionLabel->setText(QStringLiteral("Input permission granted for this session."));
+        m_permissionButton->setEnabled(false);
+    } else if (m_injector->state() == PortalPasteInjector::State::Error && !m_injector->lastError().isEmpty()) {
         m_permissionLabel->setText(QStringLiteral("Portal error: %1").arg(m_injector->lastError()));
         m_permissionButton->setEnabled(true);
-        m_permissionGroup->setVisible(true);
-        return;
-    }
-
-    if (m_injector->state() == PortalPasteInjector::State::Denied) {
+    } else if (m_injector->state() == PortalPasteInjector::State::Denied) {
         m_permissionLabel->setText(QStringLiteral("Permission was denied. Click Grant Permission to retry."));
+        m_permissionButton->setEnabled(true);
     } else {
         m_permissionLabel->setText(QStringLiteral("Input permission is required to paste automatically."));
+        m_permissionButton->setEnabled(true);
     }
-    m_permissionButton->setEnabled(true);
+
+    const bool canPreauth = m_injector->canPreauthorize();
+    const auto preauthState = m_injector->preauthState();
+    m_permissionPermanentButton->setEnabled(canPreauth
+                                            && preauthState != PortalPasteInjector::PreauthState::Working);
+
+    bool hasSettings = false;
+    const QStringList settingsCandidates = {
+        QStringLiteral("kcmshell6"),
+        QStringLiteral("kcmshell5"),
+        QStringLiteral("systemsettings"),
+        QStringLiteral("systemsettings6"),
+    };
+    for (const QString &candidate : settingsCandidates) {
+        if (!QStandardPaths::findExecutable(candidate).isEmpty()) {
+            hasSettings = true;
+            break;
+        }
+    }
+    m_permissionSettingsButton->setEnabled(hasSettings);
+
+    QString status = m_injector->preauthMessage();
+    if (status.isEmpty()) {
+        if (!canPreauth) {
+            status = QStringLiteral("flatpak is required to set permanent permissions.\nRun: %1")
+                         .arg(m_injector->preauthCommand());
+        } else {
+        switch (preauthState) {
+        case PortalPasteInjector::PreauthState::Working:
+            status = QStringLiteral("Setting permanent permission...");
+            break;
+        case PortalPasteInjector::PreauthState::Succeeded:
+            status = QStringLiteral("Permanent permission set. You should not be asked again.");
+            break;
+        case PortalPasteInjector::PreauthState::Failed:
+            status = QStringLiteral("Failed to set permanent permission.");
+            break;
+        case PortalPasteInjector::PreauthState::Unavailable:
+            status = QStringLiteral("flatpak is required to set permanent permissions.\nRun: %1")
+                         .arg(m_injector->preauthCommand());
+            break;
+        case PortalPasteInjector::PreauthState::Idle:
+            status = QStringLiteral("Make permission permanent to avoid future prompts.");
+            break;
+        }
+        }
+    }
+    m_permissionStatus->setText(status);
     m_permissionGroup->setVisible(true);
 }
 

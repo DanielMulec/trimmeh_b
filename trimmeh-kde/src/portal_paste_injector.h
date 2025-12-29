@@ -5,6 +5,8 @@
 #include <QDBusInterface>
 #include <QVariantMap>
 
+class QProcess;
+
 class PortalPasteInjector : public QObject {
     Q_OBJECT
 public:
@@ -15,6 +17,14 @@ public:
         Denied,
         Unavailable,
         Error,
+    };
+
+    enum class PreauthState {
+        Idle,
+        Working,
+        Succeeded,
+        Failed,
+        Unavailable,
     };
 
     enum class PasteResult {
@@ -32,11 +42,18 @@ public:
     bool isRequesting() const { return m_state == State::Requesting; }
     QString lastError() const { return m_lastError; }
 
+    PreauthState preauthState() const { return m_preauthState; }
+    QString preauthMessage() const { return m_preauthMessage; }
+    QString preauthCommand() const;
+    bool canPreauthorize() const;
+
     void requestPermission();
+    void requestPreauthorization();
     PasteResult injectPaste();
 
 signals:
     void stateChanged();
+    void preauthStateChanged();
 
 private slots:
     void onSessionClosed(const QVariantMap &details);
@@ -52,6 +69,9 @@ private:
     void handleSelectDevicesResponse(uint response, const QVariantMap &results);
     void handleStartResponse(uint response, const QVariantMap &results);
 
+    void updatePreauthState(PreauthState state, const QString &message = QString());
+    QString flatpakPath() const;
+
     bool sendKeycode(int keycode, uint state);
     bool sendShiftInsert();
     bool sendCtrlV();
@@ -66,4 +86,7 @@ private:
     QString m_sessionHandle;
     State m_state = State::Idle;
     QString m_lastError;
+    PreauthState m_preauthState = PreauthState::Idle;
+    QString m_preauthMessage;
+    QProcess *m_preauthProcess = nullptr;
 };

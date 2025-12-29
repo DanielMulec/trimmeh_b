@@ -19,6 +19,17 @@ cmake --build build-kde
 ./build-kde/trimmeh-kde
 ```
 
+### Portal permission (Wayland)
+
+If you want to avoid the “Grant Permission” dialog on every start, you can pre-authorize
+the Remote Desktop portal once:
+
+```sh
+flatpak permission-set kde-authorized remote-desktop dev.trimmeh.TrimmehKDE yes
+```
+
+You can also trigger this from the app: Settings → “Make Permission Permanent”.
+
 ## Run (probe)
 
 ```sh
