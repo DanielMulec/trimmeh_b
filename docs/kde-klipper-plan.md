@@ -7,13 +7,13 @@ Goal: **full Trimmy parity (functionality + UI + UX)** on KDE/Plasma, using Klip
 
 ---
 
-## 0) Current status (2025-12-29)
+## 0) Current status (2025-12-30)
 
 Implemented and verified on **Plasma 6.5.4**:
 - **Phase 0 probe**: `trimmeh-kde-probe` can read/write via Klipper DBus and receives `clipboardHistoryUpdated`.
 - **Auto-trim**: working via Klipper DBus with debounce + self-write hash guard.
 - **JS core**: `trimmeh-core-js` bundled for KDE (QJSEngine) via `trimmeh-core-js/src/kde-entry.ts`.
-- **Tray UI (minimal)**: KStatusNotifierItem menu with permission callout (when portal not ready) plus:
+- **Tray UI (minimal)**: KStatusNotifierItem menu with a hotkey-permission callout (when portal not ready), plus:
   - Paste Trimmed (High)
   - Paste Original
   - Restore last copy
@@ -21,26 +21,28 @@ Implemented and verified on **Plasma 6.5.4**:
   - Last preview line
   - Settings…
   - Quit
+- **Tray stats**: Paste actions append live character counts and trimmed counts (e.g. `· 1.2k chars · 340 trimmed`).
 - **Preferences window (Qt Widgets)**:
   - Tabs: General, Aggressiveness, Shortcuts (wired), About.
-  - General: Auto‑trim, Keep blank lines, Strip box chars, Strip prompts, Paste timing (restore delay), Start at Login, Quit. “Extra clipboard fallbacks” is present but disabled.
+  - General: hotkey-permission group (status + “Enable Hotkeys Permanently” + “Open System Settings”), Auto‑trim, Keep blank lines, Strip box chars, Strip prompts, Paste timing (restore delay), Start at Login, Quit. “Extra clipboard fallbacks” is present but disabled.
   - Aggressiveness: Low/Normal/High with live preview (Before/After).
+  - About: title + tagline + links (GitHub/Website/Twitter). No icon/version/email/update controls yet.
 - **Manual paste swap**: clipboard swap → portal paste injection (Shift+Insert → Ctrl+V fallback) after a short delay → timed restore.
 - **Settings persistence**: QSettings persists auto‑trim, keep blank lines, strip box chars, strip prompts, max lines, aggressiveness, start‑at‑login, paste restore delay, paste inject delay, hotkey toggles + sequences, and portal restore tokens.
 - **Autostart wiring**: “Start at Login” creates/removes `~/.config/autostart/dev.trimmeh.TrimmehKDE.desktop` (legacy `trimmeh-kde.desktop` cleaned up).
 - **Portal paste injection**: xdg-desktop-portal RemoteDesktop session + keyboard injection (Shift+Insert → Ctrl+V fallback).
 - **App identity**: stable app ID `dev.trimmeh.TrimmehKDE`, desktop file ensured in `~/.local/share/applications`, and portal Registry registration at startup.
-- **Permission UX**: tray + settings callout with “Grant Permission”, “Make Permission Permanent”, and “Open System Settings” (best‑effort).
+- **Permission UX**: tray info row + “Enable Hotkeys Permanently”; settings adds “Open System Settings”. Portal prompt is triggered by paste actions when needed.
 - **Pre‑authorization**: uses KDE `kde-authorized` permission store via `flatpak permission-set` from the UI, checks permission store on launch, and auto‑requests session when pre‑authorized (no prompt).
 - **Global hotkeys**: KGlobalAccel wired + shortcuts tab (persisted; no defaults assigned yet).
 - **Restore safety**: restore guard prevents auto-trim loops after manual paste/restore.
 - **Configurable restore delay**: preference for clipboard restore timing (persisted).
 
 Not yet implemented:
-- **Parity UI polish** (frontmost app label, strike‑through preview, stats badges).
+- **Parity UI polish** (frontmost app label, strike‑through preview, visible whitespace in previews, shortcut hints in menu).
 - **Passive “Paste now” hint** when portal permission is denied/unavailable.
 - **Tray menu “About” / update rows** from Trimmy.
-- **Preferences: CLI installer section + update controls** (and Email link in About).
+- **Preferences: CLI installer section + update controls** (and Email link, icon, version in About).
 - **Extra clipboard fallbacks** functionality (toggle exists but is disabled).
 
 Temporary deviations:
@@ -85,7 +87,7 @@ Responsibilities:
   - `getClipboardText()` → `getClipboardContents`
   - `setClipboardText(text)` → `setClipboardContents`
   - `clearClipboard()`, `historyItem(i)` if needed
-- Fail gracefully if the service is missing; surface a UI warning and disable auto-trim.
+- Fail gracefully if the service is missing; surface a UI warning and disable auto-trim. (Current: app exits on init failure; no UI warning yet.)
 
 ### B. `ClipboardWatcher` (race-safe state machine)
 Mirror the GNOME/Trimmy race-safety model:
@@ -150,7 +152,7 @@ Status: **Tray menu done (minimal)**; **Preferences implemented** (General + Agg
 
 **Phase 3 — Manual paste parity**
 - `Paste Trimmed` and `Paste Original` using swap → paste → restore.
-- Permission callout and “grant permission” flow via portal.
+- Permission callout and portal prompt flow via paste actions.
 Status: **Done** (swap/restore + portal injection + permission UX)
 
 **Phase 4 — QA + release hygiene**
@@ -162,7 +164,7 @@ Status: **Autostart + persistence done**; **QA checklist + vectors pending**
 ---
 
 ## 3.5) Suggested next steps (priority order)
-1. **Parity UI polish**: frontmost app label, strike‑through preview, stats badges.
+1. **Parity UI polish**: frontmost app label, strike‑through preview, visible whitespace/shortcut hints in menu.
 2. **QA pass**: manual checklist + add a minimal integration test plan for KDE.
 3. **Portal polish**: optional passive “Paste now” hint if permission is denied/unavailable.
 
@@ -179,7 +181,7 @@ Layout order:
    - Title: “Accessibility needed to paste”
    - Subtitle: “Enable Trimmy in System Settings → Privacy & Security → Accessibility so ⌘V can be sent to the front app.”
    - Buttons: “Grant Accessibility”, “Open Settings”  
-   KDE adaptation: replace with portal‑specific text (“Input permission needed to paste”) and buttons (“Grant Permission”, “Make Permission Permanent”, “Open System Settings”).
+   KDE current: hotkey‑permission wording; tray shows info + “Enable Hotkeys Permanently”; settings adds “Open System Settings”. No explicit “Grant Permission” button.
 2. **Paste Trimmed to {Front App}** button
    - Shows keyboard shortcut if enabled.
    - Stats suffix: `· {N chars}` plus `· {M trimmed}` when applicable.
@@ -198,6 +200,7 @@ Preview details:
 - `lastSummary` uses `ellipsize(..., limit: 90)` after a trim or manual action.
 - Trimmed preview uses `PreviewMetrics.displayString` (maps `\n` → `⏎`, `\t` → `⇥`).
 - Strike‑through preview uses visible whitespace mapping (space → `·`, tab → `⇥`, newline → `⏎`).
+  - KDE current: summary is a single-line, newline→space preview with middle ellipsize; no visible whitespace mapping or strike‑through yet.
 
 ### B. Defaults (Trimmy AppSettings)
 - Aggressiveness: **Normal**
@@ -229,7 +232,7 @@ Preview details:
 Tab view with fixed size: **410 × 484**.
 
 **General**
-- Permission callout (same as menu).
+- Hotkey permission group (status + “Enable Hotkeys Permanently” + “Open System Settings”).
 - Toggles:
   - “Auto‑trim enabled”
   - “Keep blank lines”
@@ -265,7 +268,7 @@ Tab view with fixed size: **410 × 484**.
 - Footnote: “Paste Trimmed always uses High aggressiveness and then restores your clipboard.”
 
 **About**
-- App icon and version
+- App icon and version (not implemented yet in KDE)
 - “Paste‑once, run‑once clipboard cleaner for terminal snippets.”
 - Links: GitHub, Website, Twitter, Email (Email link not implemented yet in KDE)
 - Update controls (not implemented yet in KDE):
@@ -286,7 +289,7 @@ Tab view with fixed size: **410 × 484**.
 - **Pre‑authorization**: when `kde-authorized` is present, hide permission buttons and auto‑request the session on launch (no prompt).
 - **Permission message on failure**:
   - Trimmy uses: “Enable Accessibility to let Trimmy paste (System Settings → Privacy & Security → Accessibility).”
-  - KDE adaptation: mention portal permission path.
+  - KDE current: generic hotkey-permission messaging (“Enable hotkeys to allow paste shortcuts”, “Permission was denied…”, “Use a paste action to retry”).
 - **No passive “Paste now” hint** on permission failure yet (tray/prefs callout only).
 - **“Nothing to paste.”** on manual paste when clipboard is empty.
 - **“No actions yet”** in preview when nothing has ever been trimmed.
