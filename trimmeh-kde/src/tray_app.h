@@ -46,6 +46,5 @@ private:
     QAction *m_autoTrimToggle = nullptr;
     QAction *m_about = nullptr;
     QAction *m_updateReady = nullptr;
-    QAction *m_quit = nullptr;
     PreferencesDialog *m_prefs = nullptr;
 };

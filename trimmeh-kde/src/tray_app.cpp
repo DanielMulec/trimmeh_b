@@ -162,9 +162,6 @@ TrayApp::TrayApp(ClipboardWatcher *watcher,
     m_updateReady = m_menu->addAction(QStringLiteral("Update ready, restart now?"));
     m_updateReady->setVisible(false);
 
-    m_quit = m_menu->addAction(QStringLiteral("Quit"));
-    connect(m_quit, &QAction::triggered, qApp, &QCoreApplication::quit);
-
     m_item->setContextMenu(m_menu);
 
     if (m_watcher) {
