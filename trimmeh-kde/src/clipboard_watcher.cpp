@@ -7,6 +7,10 @@
 #include <QCryptographicHash>
 #include <QDateTime>
 #include <QDebug>
+#include <QClipboard>
+#include <QGuiApplication>
+#include <QMimeData>
+#include <QTextDocument>
 #include <QTimer>
 
 namespace {
@@ -66,6 +70,15 @@ void ClipboardWatcher::setTrimPrompts(bool enabled) {
         return;
     }
     m_settings.trimPrompts = enabled;
+    persistSettings();
+    emit stateChanged();
+}
+
+void ClipboardWatcher::setUseClipboardFallbacks(bool enabled) {
+    if (m_settings.useClipboardFallbacks == enabled) {
+        return;
+    }
+    m_settings.useClipboardFallbacks = enabled;
     persistSettings();
     emit stateChanged();
 }
@@ -196,7 +209,7 @@ void ClipboardWatcher::process(quint64 genAtSchedule) {
     }
 
     QString error;
-    const QString text = m_bridge->getClipboardText(&error);
+    const QString text = readClipboardText(&error);
     if (!error.isEmpty()) {
         qWarning().noquote() << "[trimmeh-kde]" << error;
         return;
@@ -262,7 +275,7 @@ bool ClipboardWatcher::pasteTrimmed() {
     }
 
     QString error;
-    QString source = m_bridge->getClipboardText(&error);
+    QString source = readClipboardText(&error);
     if (!error.isEmpty()) {
         qWarning().noquote() << "[trimmeh-kde]" << error;
         return false;
@@ -284,7 +297,7 @@ bool ClipboardWatcher::pasteTrimmed() {
         return false;
     }
 
-    QString previous = m_bridge->getClipboardText(&error);
+    QString previous = readClipboardText(&error);
     if (!error.isEmpty()) {
         qWarning().noquote() << "[trimmeh-kde]" << error;
         return false;
@@ -308,7 +321,10 @@ bool ClipboardWatcher::pasteTrimmed() {
             if (result != PortalPasteInjector::PasteResult::Injected) {
                 qInfo() << "[trimmeh-kde] portal inject result" << static_cast<int>(result);
             }
+            applyPasteHint(result);
         });
+    } else if (swapped) {
+        applyPasteHint(PortalPasteInjector::PasteResult::Unavailable);
     }
     return swapped;
 }
@@ -319,7 +335,7 @@ bool ClipboardWatcher::pasteOriginal() {
     }
 
     QString error;
-    const QString current = m_bridge->getClipboardText(&error);
+    const QString current = readClipboardText(&error);
     if (!error.isEmpty()) {
         qWarning().noquote() << "[trimmeh-kde]" << error;
         return false;
@@ -333,7 +349,7 @@ bool ClipboardWatcher::pasteOriginal() {
     const bool usesCachedOriginal = !m_lastOriginal.isEmpty() && current == m_lastTrimmed;
     const QString original = usesCachedOriginal ? m_lastOriginal : current;
 
-    QString previous = m_bridge->getClipboardText(&error);
+    QString previous = readClipboardText(&error);
     if (!error.isEmpty()) {
         qWarning().noquote() << "[trimmeh-kde]" << error;
         return false;
@@ -356,7 +372,10 @@ bool ClipboardWatcher::pasteOriginal() {
             if (result != PortalPasteInjector::PasteResult::Injected) {
                 qInfo() << "[trimmeh-kde] portal inject result" << static_cast<int>(result);
             }
+            applyPasteHint(result);
         });
+    } else if (swapped) {
+        applyPasteHint(PortalPasteInjector::PasteResult::Unavailable);
     }
     return swapped;
 }
@@ -397,9 +416,11 @@ void ClipboardWatcher::updateSummary(const QString &text) {
 }
 
 QString ClipboardWatcher::summarize(const QString &text) const {
-    QString singleLine = text;
-    singleLine.replace('\n', ' ');
-    return ellipsize(singleLine.trimmed(), 90);
+    QString display = text;
+    display.replace('\n', QStringLiteral("\u23CE "));
+    display.replace('\t', QStringLiteral("\u21E5 "));
+    display.replace('\r', ' ');
+    return ellipsize(display.trimmed(), 90);
 }
 
 QString ClipboardWatcher::ellipsize(const QString &text, int limit) const {
@@ -479,4 +500,65 @@ bool ClipboardWatcher::shouldIgnoreRestoreGuard(const QString &hash) {
     m_restoreGuardHash.clear();
     m_restoreGuardExpiresMs = 0;
     return false;
+}
+
+void ClipboardWatcher::applyPasteHint(PortalPasteInjector::PasteResult result) {
+    if (result == PortalPasteInjector::PasteResult::Injected) {
+        return;
+    }
+    updateSummary(QStringLiteral("Paste now in your app (Ctrl+V)."));
+}
+
+QString ClipboardWatcher::readClipboardText(QString *errorMessage) const {
+    if (!m_bridge) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("Klipper bridge not initialized");
+        }
+        return QString();
+    }
+
+    QString error;
+    QString text = m_bridge->getClipboardText(&error);
+    if (!error.isEmpty()) {
+        if (errorMessage) {
+            *errorMessage = error;
+        }
+        return QString();
+    }
+
+    if (!text.isEmpty()) {
+        return text;
+    }
+
+    if (!m_settings.useClipboardFallbacks) {
+        return text;
+    }
+
+    return fallbackClipboardText();
+}
+
+QString ClipboardWatcher::fallbackClipboardText() const {
+    QClipboard *clipboard = QGuiApplication::clipboard();
+    if (!clipboard) {
+        return QString();
+    }
+
+    QString plain = clipboard->text(QStringLiteral("plain"), QClipboard::Clipboard);
+    if (!plain.isEmpty()) {
+        return plain;
+    }
+
+    QString html = clipboard->text(QStringLiteral("html"), QClipboard::Clipboard);
+    if (!html.isEmpty()) {
+        QTextDocument doc;
+        doc.setHtml(html);
+        return doc.toPlainText();
+    }
+
+    const QMimeData *mime = clipboard->mimeData(QClipboard::Clipboard);
+    if (mime && mime->hasText()) {
+        return mime->text();
+    }
+
+    return QString();
 }

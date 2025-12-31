@@ -7,6 +7,7 @@ struct Settings {
     bool keepBlankLines = false;
     bool stripBoxChars = true;
     bool trimPrompts = true;
+    bool useClipboardFallbacks = false;
     int maxLines = 10;
     QString aggressiveness = QStringLiteral("normal");
     int graceDelayMs = 80;

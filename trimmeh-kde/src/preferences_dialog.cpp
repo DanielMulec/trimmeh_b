@@ -7,9 +7,13 @@
 #include <QCheckBox>
 #include <QDesktopServices>
 #include <QDialogButtonBox>
+#include <QFile>
+#include <QFileDevice>
+#include <QFileInfo>
 #include <QFormLayout>
 #include <QGroupBox>
 #include <QHBoxLayout>
+#include <QIcon>
 #include <QKeySequenceEdit>
 #include <QLabel>
 #include <QPlainTextEdit>
@@ -37,14 +41,14 @@ PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher,
     setMinimumSize(410, 484);
 
     auto *layout = new QVBoxLayout(this);
-    auto *tabs = new QTabWidget(this);
+    m_tabs = new QTabWidget(this);
 
-    buildGeneralTab(tabs);
-    buildAggressivenessTab(tabs);
-    buildShortcutsTab(tabs);
-    buildAboutTab(tabs);
+    buildGeneralTab(m_tabs);
+    buildAggressivenessTab(m_tabs);
+    buildShortcutsTab(m_tabs);
+    buildAboutTab(m_tabs);
 
-    layout->addWidget(tabs);
+    layout->addWidget(m_tabs);
 
     auto *buttons = new QDialogButtonBox(QDialogButtonBox::Close, this);
     connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
@@ -60,6 +64,15 @@ PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher,
     }
     refreshFromWatcher();
     refreshPermission();
+}
+
+void PreferencesDialog::showAboutTab() {
+    if (m_tabs && m_aboutTabIndex >= 0) {
+        m_tabs->setCurrentIndex(m_aboutTabIndex);
+    }
+    show();
+    raise();
+    activateWindow();
 }
 
 void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
@@ -164,9 +177,29 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     });
     timingLayout->addRow(QStringLiteral("Restore delay"), m_restoreDelay);
 
-    auto *fallbacks = new QCheckBox(QStringLiteral("Use extra clipboard fallbacks"), panel);
-    fallbacks->setToolTip(QStringLiteral("Try alternate clipboard formats when plain text is missing."));
-    fallbacks->setEnabled(false);
+    m_clipboardFallbacks = new QCheckBox(QStringLiteral("Use extra clipboard fallbacks"), panel);
+    m_clipboardFallbacks->setToolTip(QStringLiteral("Try alternate clipboard formats when plain text is missing."));
+    connect(m_clipboardFallbacks, &QCheckBox::toggled, this, [this](bool enabled) {
+        if (m_watcher) {
+            m_watcher->setUseClipboardFallbacks(enabled);
+        }
+    });
+
+    auto *cliGroup = new QGroupBox(QStringLiteral("Command-line tool"), panel);
+    auto *cliLayout = new QVBoxLayout(cliGroup);
+    auto *cliRow = new QHBoxLayout();
+    m_installCliButton = new QPushButton(QStringLiteral("Install CLI"), cliGroup);
+    connect(m_installCliButton, &QPushButton::clicked, this, &PreferencesDialog::installCli);
+    m_cliStatus = new QLabel(QString(), cliGroup);
+    m_cliStatus->setWordWrap(true);
+    m_cliStatus->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    cliRow->addWidget(m_installCliButton);
+    cliRow->addWidget(m_cliStatus, 1);
+    cliLayout->addLayout(cliRow);
+    auto *cliNote = new QLabel(QStringLiteral("Install `trimmeh` into ~/.local/bin."), cliGroup);
+    cliNote->setWordWrap(true);
+    cliNote->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    cliLayout->addWidget(cliNote);
 
     m_startAtLogin = new QCheckBox(QStringLiteral("Start at Login"), panel);
     m_startAtLogin->setToolTip(QStringLiteral("Launch Trimmeh automatically when you log in."));
@@ -185,7 +218,8 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     layout->addWidget(m_stripBox);
     layout->addWidget(m_trimPrompts);
     layout->addWidget(timingGroup);
-    layout->addWidget(fallbacks);
+    layout->addWidget(m_clipboardFallbacks);
+    layout->addWidget(cliGroup);
     layout->addWidget(m_startAtLogin);
     layout->addStretch(1);
     layout->addWidget(quitButton);
@@ -337,9 +371,27 @@ void PreferencesDialog::buildAboutTab(QTabWidget *tabs) {
     auto *panel = new QWidget(this);
     auto *layout = new QVBoxLayout(panel);
 
+    auto *iconLabel = new QLabel(panel);
+    QPixmap iconPixmap = QIcon::fromTheme(QStringLiteral("edit-cut")).pixmap(64, 64);
+    if (!iconPixmap.isNull()) {
+        iconLabel->setPixmap(iconPixmap);
+    }
+    iconLabel->setAlignment(Qt::AlignHCenter);
+
     auto *title = new QLabel(QStringLiteral("Trimmeh"), panel);
+    title->setAlignment(Qt::AlignHCenter);
+
+    const QString version = QCoreApplication::applicationVersion();
+    auto *versionLabel = new QLabel(version.isEmpty()
+                                        ? QStringLiteral("Version –")
+                                        : QStringLiteral("Version %1").arg(version),
+                                    panel);
+    versionLabel->setAlignment(Qt::AlignHCenter);
+    versionLabel->setStyleSheet(QStringLiteral("color: palette(mid);"));
+
     auto *tagline = new QLabel(QStringLiteral("Paste-once, run-once clipboard cleaner for terminal snippets."), panel);
     tagline->setWordWrap(true);
+    tagline->setAlignment(Qt::AlignHCenter);
 
     auto *links = new QGroupBox(QStringLiteral("Links"), panel);
     auto *linksLayout = new QVBoxLayout(links);
@@ -355,13 +407,30 @@ void PreferencesDialog::buildAboutTab(QTabWidget *tabs) {
     linksLayout->addWidget(linkButton(QStringLiteral("GitHub"), QStringLiteral("https://github.com/steipete/Trimmy")));
     linksLayout->addWidget(linkButton(QStringLiteral("Website"), QStringLiteral("https://steipete.me")));
     linksLayout->addWidget(linkButton(QStringLiteral("Twitter"), QStringLiteral("https://twitter.com/steipete")));
+    linksLayout->addWidget(linkButton(QStringLiteral("Email"), QStringLiteral("mailto:peter@steipete.me")));
 
+    auto *updates = new QGroupBox(QStringLiteral("Updates"), panel);
+    auto *updatesLayout = new QVBoxLayout(updates);
+    auto *autoCheck = new QCheckBox(QStringLiteral("Check for updates automatically"), updates);
+    autoCheck->setEnabled(false);
+    auto *checkNow = new QPushButton(QStringLiteral("Check for Updates…"), updates);
+    checkNow->setEnabled(false);
+    auto *updateNote = new QLabel(QStringLiteral("Updates are delivered via your package manager."), updates);
+    updateNote->setWordWrap(true);
+    updateNote->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    updatesLayout->addWidget(autoCheck);
+    updatesLayout->addWidget(checkNow);
+    updatesLayout->addWidget(updateNote);
+
+    layout->addWidget(iconLabel);
     layout->addWidget(title);
+    layout->addWidget(versionLabel);
     layout->addWidget(tagline);
     layout->addWidget(links);
+    layout->addWidget(updates);
     layout->addStretch(1);
 
-    tabs->addTab(panel, QStringLiteral("About"));
+    m_aboutTabIndex = tabs->addTab(panel, QStringLiteral("About"));
 }
 
 void PreferencesDialog::refreshFromWatcher() {
@@ -372,6 +441,7 @@ void PreferencesDialog::refreshFromWatcher() {
     if (m_keepBlank) m_keepBlank->setChecked(m_watcher->keepBlankLines());
     if (m_stripBox) m_stripBox->setChecked(m_watcher->stripBoxChars());
     if (m_trimPrompts) m_trimPrompts->setChecked(m_watcher->trimPrompts());
+    if (m_clipboardFallbacks) m_clipboardFallbacks->setChecked(m_watcher->useClipboardFallbacks());
     if (m_startAtLogin) m_startAtLogin->setChecked(m_watcher->startAtLogin());
     if (m_restoreDelay) {
         const QSignalBlocker block(m_restoreDelay);
@@ -454,7 +524,7 @@ void PreferencesDialog::refreshPermission() {
     } else if (m_injector->state() == PortalPasteInjector::State::Error && !m_injector->lastError().isEmpty()) {
         m_permissionLabel->setText(QStringLiteral("Hotkey permission error: %1").arg(m_injector->lastError()));
     } else if (m_injector->state() == PortalPasteInjector::State::Denied) {
-        m_permissionLabel->setText(QStringLiteral("Permission was denied. Use a paste action to retry."));
+        m_permissionLabel->setText(QStringLiteral("Permission was denied. Use a paste action, then paste manually (Ctrl+V)."));
     } else {
         m_permissionLabel->setText(QStringLiteral("Enable hotkeys to allow paste shortcuts."));
     }
@@ -510,6 +580,53 @@ void PreferencesDialog::refreshPermission() {
     }
     m_permissionStatus->setText(status);
     m_permissionGroup->setVisible(true);
+}
+
+void PreferencesDialog::installCli() {
+    if (!m_installCliButton || !m_cliStatus) {
+        return;
+    }
+
+    const QString source = QStandardPaths::findExecutable(QStringLiteral("trimmeh-cli"));
+    if (source.isEmpty()) {
+        m_cliStatus->setText(QStringLiteral("trimmeh-cli not found in PATH."));
+        return;
+    }
+
+    const QString homeDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    if (homeDir.isEmpty()) {
+        m_cliStatus->setText(QStringLiteral("Failed to resolve home directory."));
+        return;
+    }
+
+    QDir binDir(QDir(homeDir).filePath(QStringLiteral(".local/bin")));
+    if (!binDir.exists() && !binDir.mkpath(QStringLiteral("."))) {
+        m_cliStatus->setText(QStringLiteral("Failed to create ~/.local/bin."));
+        return;
+    }
+
+    const QString target = binDir.filePath(QStringLiteral("trimmeh"));
+    QFileInfo targetInfo(target);
+    QFileInfo sourceInfo(source);
+    if (targetInfo.exists()) {
+        if (targetInfo.canonicalFilePath() == sourceInfo.canonicalFilePath()) {
+            m_cliStatus->setText(QStringLiteral("Already installed."));
+            return;
+        }
+        QFile::remove(target);
+    }
+
+    if (!QFile::link(source, target)) {
+        if (!QFile::copy(source, target)) {
+            m_cliStatus->setText(QStringLiteral("Failed to install CLI."));
+            return;
+        }
+        QFile::setPermissions(target, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner
+                                       | QFileDevice::ReadGroup | QFileDevice::ExeGroup
+                                       | QFileDevice::ReadOther | QFileDevice::ExeOther);
+    }
+
+    m_cliStatus->setText(QStringLiteral("Installed. Ensure ~/.local/bin is on PATH."));
 }
 
 QString PreferencesDialog::sampleForAggressiveness(const QString &level) const {

@@ -24,6 +24,8 @@ public:
                       PortalPasteInjector *injector = nullptr,
                       QWidget *parent = nullptr);
 
+    void showAboutTab();
+
 private slots:
     void refreshFromWatcher();
     void updateAggressivenessPreview();
@@ -34,6 +36,7 @@ private:
     void buildShortcutsTab(QTabWidget *tabs);
     void buildAboutTab(QTabWidget *tabs);
     void refreshPermission();
+    void installCli();
 
     QString sampleForAggressiveness(const QString &level) const;
     QString trimmedPreviewFor(const QString &level) const;
@@ -41,6 +44,8 @@ private:
     ClipboardWatcher *m_watcher = nullptr;
     TrimCore *m_core = nullptr;
     PortalPasteInjector *m_injector = nullptr;
+    QTabWidget *m_tabs = nullptr;
+    int m_aboutTabIndex = -1;
 
     QGroupBox *m_permissionGroup = nullptr;
     QLabel *m_permissionLabel = nullptr;
@@ -53,6 +58,7 @@ private:
     QCheckBox *m_keepBlank = nullptr;
     QCheckBox *m_stripBox = nullptr;
     QCheckBox *m_trimPrompts = nullptr;
+    QCheckBox *m_clipboardFallbacks = nullptr;
     QCheckBox *m_startAtLogin = nullptr;
     QCheckBox *m_pasteTrimmedHotkeyEnabled = nullptr;
     QCheckBox *m_pasteOriginalHotkeyEnabled = nullptr;
@@ -67,4 +73,7 @@ private:
     QLabel *m_blurb = nullptr;
     QPlainTextEdit *m_previewBefore = nullptr;
     QPlainTextEdit *m_previewAfter = nullptr;
+
+    QPushButton *m_installCliButton = nullptr;
+    QLabel *m_cliStatus = nullptr;
 };

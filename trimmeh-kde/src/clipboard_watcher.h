@@ -1,6 +1,7 @@
 #pragma once
 
 #include "klipper_bridge.h"
+#include "portal_paste_injector.h"
 #include "settings.h"
 #include "trim_core.h"
 
@@ -9,7 +10,6 @@
 
 class SettingsStore;
 class AutostartManager;
-class PortalPasteInjector;
 
 class ClipboardWatcher : public QObject {
     Q_OBJECT
@@ -28,6 +28,7 @@ public:
     bool keepBlankLines() const { return m_settings.keepBlankLines; }
     bool stripBoxChars() const { return m_settings.stripBoxChars; }
     bool trimPrompts() const { return m_settings.trimPrompts; }
+    bool useClipboardFallbacks() const { return m_settings.useClipboardFallbacks; }
     int maxLines() const { return m_settings.maxLines; }
     QString aggressiveness() const { return m_settings.aggressiveness; }
     bool startAtLogin() const { return m_settings.startAtLogin; }
@@ -42,6 +43,7 @@ public:
     void setKeepBlankLines(bool enabled);
     void setStripBoxChars(bool enabled);
     void setTrimPrompts(bool enabled);
+    void setUseClipboardFallbacks(bool enabled);
     void setMaxLines(int maxLines);
     void setAggressiveness(const QString &level);
     void setStartAtLogin(bool enabled);
@@ -82,6 +84,9 @@ private:
     void persistSettings();
     void setRestoreGuard(const QString &text, int durationMs);
     bool shouldIgnoreRestoreGuard(const QString &hash);
+    void applyPasteHint(PortalPasteInjector::PasteResult result);
+    QString readClipboardText(QString *errorMessage = nullptr) const;
+    QString fallbackClipboardText() const;
 
     KlipperBridge *m_bridge = nullptr;
     TrimCore *m_core = nullptr;
