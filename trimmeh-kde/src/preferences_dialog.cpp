@@ -20,6 +20,7 @@
 #include <QPlainTextEdit>
 #include <QPushButton>
 #include <QProcess>
+#include <QProcessEnvironment>
 #include <QRadioButton>
 #include <QSignalBlocker>
 #include <QSpinBox>
@@ -28,6 +29,101 @@
 #include <QUrl>
 #include <QVBoxLayout>
 #include <QStringList>
+
+namespace {
+
+struct OsReleaseInfo {
+    QString id;
+    QStringList idLike;
+};
+
+QString stripQuotes(const QString &value) {
+    if (value.size() >= 2
+        && ((value.startsWith(QLatin1Char('"')) && value.endsWith(QLatin1Char('"')))
+            || (value.startsWith(QLatin1Char('\'')) && value.endsWith(QLatin1Char('\''))))) {
+        return value.mid(1, value.size() - 2);
+    }
+    return value;
+}
+
+OsReleaseInfo readOsRelease() {
+    OsReleaseInfo info;
+    QFile file(QStringLiteral("/etc/os-release"));
+    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        return info;
+    }
+
+    while (!file.atEnd()) {
+        QString line = QString::fromUtf8(file.readLine()).trimmed();
+        if (line.isEmpty() || line.startsWith(QLatin1Char('#'))) {
+            continue;
+        }
+        const int separator = line.indexOf(QLatin1Char('='));
+        if (separator <= 0) {
+            continue;
+        }
+        const QString key = line.left(separator).trimmed();
+        QString value = stripQuotes(line.mid(separator + 1).trimmed()).toLower();
+        if (key == QStringLiteral("ID")) {
+            info.id = value;
+        } else if (key == QStringLiteral("ID_LIKE")) {
+            info.idLike = value.split(QLatin1Char(' '), Qt::SkipEmptyParts);
+        }
+    }
+    return info;
+}
+
+bool distroMatches(const OsReleaseInfo &info, const QString &id) {
+    const QString needle = id.toLower();
+    if (info.id == needle) {
+        return true;
+    }
+    return info.idLike.contains(needle);
+}
+
+bool ensureCliAlias(const QString &source, QString *errorMessage) {
+    const QString homeDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
+    if (homeDir.isEmpty()) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("Failed to resolve home directory.");
+        }
+        return false;
+    }
+
+    QDir binDir(QDir(homeDir).filePath(QStringLiteral(".local/bin")));
+    if (!binDir.exists() && !binDir.mkpath(QStringLiteral("."))) {
+        if (errorMessage) {
+            *errorMessage = QStringLiteral("Failed to create ~/.local/bin.");
+        }
+        return false;
+    }
+
+    const QString target = binDir.filePath(QStringLiteral("trimmeh"));
+    QFileInfo targetInfo(target);
+    QFileInfo sourceInfo(source);
+    if (targetInfo.exists()) {
+        if (targetInfo.canonicalFilePath() == sourceInfo.canonicalFilePath()) {
+            return true;
+        }
+        QFile::remove(target);
+    }
+
+    if (!QFile::link(source, target)) {
+        if (!QFile::copy(source, target)) {
+            if (errorMessage) {
+                *errorMessage = QStringLiteral("Failed to install CLI alias.");
+            }
+            return false;
+        }
+        QFile::setPermissions(target, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner
+                                       | QFileDevice::ReadGroup | QFileDevice::ExeGroup
+                                       | QFileDevice::ReadOther | QFileDevice::ExeOther);
+    }
+
+    return true;
+}
+
+}
 
 PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher,
                                      TrimCore *core,
@@ -197,7 +293,7 @@ void PreferencesDialog::buildGeneralTab(QTabWidget *tabs) {
     cliRow->addWidget(m_installCliButton);
     cliRow->addWidget(m_cliStatus, 1);
     cliLayout->addLayout(cliRow);
-    auto *cliNote = new QLabel(QStringLiteral("Install `trimmeh` into ~/.local/bin."), cliGroup);
+    auto *cliNote = new QLabel(QStringLiteral("Installs the CLI package (if available) and links `trimmeh` into ~/.local/bin."), cliGroup);
     cliNote->setWordWrap(true);
     cliNote->setStyleSheet(QStringLiteral("color: palette(mid);"));
     cliLayout->addWidget(cliNote);
@@ -588,46 +684,109 @@ void PreferencesDialog::installCli() {
         return;
     }
 
+    if (m_cliProcess) {
+        if (m_cliProcess->state() != QProcess::NotRunning) {
+            m_cliStatus->setText(QStringLiteral("CLI installer is already running."));
+            return;
+        }
+        m_cliProcess->deleteLater();
+        m_cliProcess = nullptr;
+    }
+
     const QString source = QStandardPaths::findExecutable(QStringLiteral("trimmeh-cli"));
-    if (source.isEmpty()) {
-        m_cliStatus->setText(QStringLiteral("trimmeh-cli not found in PATH."));
-        return;
-    }
-
-    const QString homeDir = QStandardPaths::writableLocation(QStandardPaths::HomeLocation);
-    if (homeDir.isEmpty()) {
-        m_cliStatus->setText(QStringLiteral("Failed to resolve home directory."));
-        return;
-    }
-
-    QDir binDir(QDir(homeDir).filePath(QStringLiteral(".local/bin")));
-    if (!binDir.exists() && !binDir.mkpath(QStringLiteral("."))) {
-        m_cliStatus->setText(QStringLiteral("Failed to create ~/.local/bin."));
-        return;
-    }
-
-    const QString target = binDir.filePath(QStringLiteral("trimmeh"));
-    QFileInfo targetInfo(target);
-    QFileInfo sourceInfo(source);
-    if (targetInfo.exists()) {
-        if (targetInfo.canonicalFilePath() == sourceInfo.canonicalFilePath()) {
-            m_cliStatus->setText(QStringLiteral("Already installed."));
-            return;
+    if (!source.isEmpty()) {
+        QString errorMessage;
+        if (ensureCliAlias(source, &errorMessage)) {
+            m_cliStatus->setText(QStringLiteral("CLI installed. Ensure ~/.local/bin is on PATH."));
+        } else {
+            m_cliStatus->setText(errorMessage);
         }
-        QFile::remove(target);
+        return;
     }
 
-    if (!QFile::link(source, target)) {
-        if (!QFile::copy(source, target)) {
-            m_cliStatus->setText(QStringLiteral("Failed to install CLI."));
-            return;
+    const QString pkexec = QStandardPaths::findExecutable(QStringLiteral("pkexec"));
+    if (pkexec.isEmpty()) {
+        m_cliStatus->setText(QStringLiteral("trimmeh-cli not found in PATH. Install it via your package manager, then click Install CLI again."));
+        return;
+    }
+
+    const OsReleaseInfo osInfo = readOsRelease();
+    QString manager = QStringLiteral("dnf");
+    QStringList managerArgs;
+    QString installHint;
+
+    if (distroMatches(osInfo, QStringLiteral("fedora")) || distroMatches(osInfo, QStringLiteral("rhel"))
+        || distroMatches(osInfo, QStringLiteral("centos")) || distroMatches(osInfo, QStringLiteral("rocky"))
+        || distroMatches(osInfo, QStringLiteral("almalinux"))) {
+        managerArgs << QStringLiteral("install") << QStringLiteral("-y") << QStringLiteral("trimmeh-cli");
+        installHint = QStringLiteral("dnf install -y trimmeh-cli");
+    } else if (distroMatches(osInfo, QStringLiteral("debian")) || distroMatches(osInfo, QStringLiteral("ubuntu"))
+               || distroMatches(osInfo, QStringLiteral("linuxmint"))) {
+        manager = QStringLiteral("apt-get");
+        managerArgs << QStringLiteral("install") << QStringLiteral("-y") << QStringLiteral("trimmeh-cli");
+        installHint = QStringLiteral("apt-get install -y trimmeh-cli");
+    } else if (distroMatches(osInfo, QStringLiteral("arch"))) {
+        m_cliStatus->setText(QStringLiteral("On Arch, install trimmeh-cli from the AUR, then click Install CLI again."));
+        return;
+    } else {
+        m_cliStatus->setText(QStringLiteral("Install trimmeh-cli manually, then click Install CLI again."));
+        return;
+    }
+
+    const QString managerPath = QStandardPaths::findExecutable(manager);
+    if (managerPath.isEmpty()) {
+        m_cliStatus->setText(QStringLiteral("Package manager not found. Install trimmeh-cli manually (%1).").arg(installHint));
+        return;
+    }
+
+    m_cliProcess = new QProcess(this);
+    m_cliProcess->setProgram(pkexec);
+    m_cliProcess->setArguments(QStringList{managerPath} + managerArgs);
+    QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
+    if (manager == QStringLiteral("apt-get")) {
+        env.insert(QStringLiteral("DEBIAN_FRONTEND"), QStringLiteral("noninteractive"));
+        env.insert(QStringLiteral("APT_LISTCHANGES_FRONTEND"), QStringLiteral("none"));
+    }
+    m_cliProcess->setProcessEnvironment(env);
+
+    m_installCliButton->setEnabled(false);
+    m_cliStatus->setText(QStringLiteral("Installing trimmeh-cli..."));
+
+    const QString managerName = QFileInfo(managerPath).baseName();
+    connect(m_cliProcess, &QProcess::finished, this, [this, managerName](int exitCode, QProcess::ExitStatus exitStatus) {
+        m_installCliButton->setEnabled(true);
+        if (exitStatus != QProcess::NormalExit || exitCode != 0) {
+            m_cliStatus->setText(QStringLiteral("CLI install failed via %1.").arg(managerName));
+        } else {
+            const QString resolved = QStandardPaths::findExecutable(QStringLiteral("trimmeh-cli"));
+            if (resolved.isEmpty()) {
+                m_cliStatus->setText(QStringLiteral("Installed via %1, but trimmeh-cli is still not on PATH. Log out and try again.")
+                                        .arg(managerName));
+            } else {
+                QString errorMessage;
+                if (ensureCliAlias(resolved, &errorMessage)) {
+                    m_cliStatus->setText(QStringLiteral("CLI installed. Ensure ~/.local/bin is on PATH."));
+                } else {
+                    m_cliStatus->setText(errorMessage);
+                }
+            }
         }
-        QFile::setPermissions(target, QFileDevice::ReadOwner | QFileDevice::WriteOwner | QFileDevice::ExeOwner
-                                       | QFileDevice::ReadGroup | QFileDevice::ExeGroup
-                                       | QFileDevice::ReadOther | QFileDevice::ExeOther);
-    }
+        if (m_cliProcess) {
+            m_cliProcess->deleteLater();
+            m_cliProcess = nullptr;
+        }
+    });
 
-    m_cliStatus->setText(QStringLiteral("Installed. Ensure ~/.local/bin is on PATH."));
+    connect(m_cliProcess, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) {
+        m_installCliButton->setEnabled(true);
+        m_cliStatus->setText(QStringLiteral("CLI install failed to start."));
+        if (m_cliProcess) {
+            m_cliProcess->deleteLater();
+            m_cliProcess = nullptr;
+        }
+    });
+
+    m_cliProcess->start();
 }
 
 QString PreferencesDialog::sampleForAggressiveness(const QString &level) const {

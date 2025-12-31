@@ -1,0 +1,33 @@
+pkgbase=trimmeh
+pkgname=('trimmeh-kde' 'trimmeh-cli')
+pkgver=0.1.0
+pkgrel=1
+arch=('x86_64')
+url='https://www.danielmulec.com'
+license=('MIT')
+makedepends=('cmake' 'ninja' 'esbuild' 'rust' 'cargo')
+source=("trimmeh_b-${pkgver}.tar.gz::https://github.com/DanielMulec/trimmeh_b/archive/refs/tags/v${pkgver}.tar.gz")
+sha256sums=('SKIP')
+
+build() {
+  cmake -S trimmeh-kde -B build-kde -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+  cmake --build build-kde
+  cargo build -p trimmeh-cli --release
+}
+
+package_trimmeh-kde() {
+  pkgdesc='Clipboard auto-trimmer tray app for KDE Plasma'
+  depends=('qt6-base' 'qt6-declarative' 'kstatusnotifieritem' 'kglobalaccel')
+  optdepends=('trimmeh-cli: command-line trimming tool')
+
+  DESTDIR="${pkgdir}" cmake --install build-kde
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/trimmeh-kde/LICENSE"
+}
+
+package_trimmeh-cli() {
+  pkgdesc='Command-line interface for Trimmeh'
+  depends=()
+
+  install -Dm755 target/release/trimmeh-cli "${pkgdir}/usr/bin/trimmeh-cli"
+  install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/trimmeh-cli/LICENSE"
+}

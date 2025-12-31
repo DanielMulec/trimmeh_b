@@ -1,0 +1,17 @@
+#!/usr/bin/make -f
+
+export DH_VERBOSE = 1
+
+%:
+	dh $@ --buildsystem=cmake --builddirectory=build-kde
+
+override_dh_auto_configure:
+	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+
+override_dh_auto_build:
+	dh_auto_build
+	cargo build -p trimmeh-cli --release
+
+override_dh_auto_install:
+	dh_auto_install
+	install -Dpm0755 target/release/trimmeh-cli debian/tmp/usr/bin/trimmeh-cli

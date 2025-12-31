@@ -25,3 +25,23 @@
 - Produced from `shell-extension/` tree.
 - `metadata.json` `shell-version`: `["49", "48"]` (no older versions).
 - Exclude `node_modules`; ship built JS + wasm + schemas.
+
+## KDE tray app (Fedora, Debian/Ubuntu, Arch)
+
+### Fedora RPM
+- Spec file: `packaging/fedora/trimmeh-kde.spec`
+- Builds `trimmeh-kde` plus a `trimmeh-cli` subpackage.
+- `trimmeh-kde` recommends `trimmeh-cli` so the CLI is offered but not required.
+- Example build: `rpmbuild -ba packaging/fedora/trimmeh-kde.spec --define "_sourcedir $(pwd)"`
+
+### Debian / Ubuntu
+- Template debian folder: `packaging/debian/trimmeh-kde/debian`
+- Includes split packages (`trimmeh-kde`, `trimmeh-cli`) and installs AppStream + desktop files.
+- Typical flow:
+  - Copy the template to a `debian/` directory in a release tarball.
+  - Build with `dpkg-buildpackage -b -us -uc`.
+
+### Arch (AUR)
+- PKGBUILD: `packaging/arch/PKGBUILD`
+- Split packages: `trimmeh-kde` and `trimmeh-cli`.
+- Update `pkgver` and `sha256sums` when tagging releases.

@@ -6,6 +6,8 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+include(GNUInstallDirs)
+
 set(CMAKE_AUTOMOC ON)
 set(CMAKE_AUTORCC ON)
 set(CMAKE_AUTOUIC ON)
@@ -14,17 +16,27 @@ find_package(Qt6 REQUIRED COMPONENTS Core DBus Qml Widgets)
 find_package(KF6StatusNotifierItem REQUIRED)
 find_package(KF6GlobalAccel REQUIRED)
 
+find_program(ESBUILD esbuild)
 find_program(NPX npx)
-if (NOT NPX)
-    message(FATAL_ERROR "npx not found. Install Node.js (with npm/npx) to bundle trimmeh-core-js.")
+if (NOT ESBUILD AND NOT NPX)
+    message(FATAL_ERROR "esbuild or npx not found. Install esbuild or Node.js (with npm/npx) to bundle trimmeh-core-js.")
 endif()
 
 set(CORE_TS "${CMAKE_CURRENT_LIST_DIR}/../trimmeh-core-js/src/kde-entry.ts")
 set(CORE_JS "${CMAKE_CURRENT_BINARY_DIR}/trimmeh-core.js")
 
+set(ESBUILD_COMMAND "")
+set(ESBUILD_ARGS "")
+if (ESBUILD)
+    set(ESBUILD_COMMAND "${ESBUILD}")
+else()
+    set(ESBUILD_COMMAND "${NPX}")
+    set(ESBUILD_ARGS esbuild)
+endif()
+
 add_custom_command(
     OUTPUT "${CORE_JS}"
-    COMMAND "${NPX}" esbuild "${CORE_TS}" --bundle --format=iife --platform=neutral --outfile="${CORE_JS}"
+    COMMAND ${ESBUILD_COMMAND} ${ESBUILD_ARGS} "${CORE_TS}" --bundle --format=iife --platform=neutral --outfile="${CORE_JS}"
     DEPENDS "${CORE_TS}"
     WORKING_DIRECTORY "${CMAKE_CURRENT_LIST_DIR}/.."
     COMMENT "Bundling trimmeh-core-js for KDE"
@@ -86,3 +98,10 @@ add_custom_command(TARGET trimmeh-kde POST_BUILD
     COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CORE_JS}" $<TARGET_FILE_DIR:trimmeh-kde>/trimmeh-core.js
     COMMENT "Copying trimmeh-core.js next to trimmeh-kde"
 )
+
+install(TARGETS trimmeh-kde RUNTIME DESTINATION ${CMAKE_INSTALL_BINDIR})
+install(FILES "${CORE_JS}" DESTINATION ${CMAKE_INSTALL_LIBDIR}/trimmeh)
+install(FILES "${CMAKE_CURRENT_LIST_DIR}/resources/dev.trimmeh.TrimmehKDE.desktop"
+        DESTINATION share/applications)
+install(FILES "${CMAKE_CURRENT_LIST_DIR}/resources/dev.trimmeh.TrimmehKDE.metainfo.xml"
+        DESTINATION share/metainfo)

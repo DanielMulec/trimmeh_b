@@ -15,6 +15,7 @@ class QPushButton;
 class QGroupBox;
 class PortalPasteInjector;
 class QSpinBox;
+class QProcess;
 
 class PreferencesDialog : public QDialog {
     Q_OBJECT
@@ -76,4 +77,5 @@ private:
 
     QPushButton *m_installCliButton = nullptr;
     QLabel *m_cliStatus = nullptr;
+    QProcess *m_cliProcess = nullptr;
 };

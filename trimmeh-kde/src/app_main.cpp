@@ -15,12 +15,26 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QStandardPaths>
 #include <QSettings>
 
 namespace {
 QString coreBundlePath() {
     const QString appDir = QApplication::applicationDirPath();
-    return QDir(appDir).filePath(QStringLiteral("trimmeh-core.js"));
+    const QString local = QDir(appDir).filePath(QStringLiteral("trimmeh-core.js"));
+    if (QFileInfo::exists(local)) {
+        return local;
+    }
+
+    const QStringList libDirs = QStandardPaths::standardLocations(QStandardPaths::LibraryLocation);
+    for (const QString &dir : libDirs) {
+        const QString candidate = QDir(dir).filePath(QStringLiteral("trimmeh/trimmeh-core.js"));
+        if (QFileInfo::exists(candidate)) {
+            return candidate;
+        }
+    }
+
+    return local;
 }
 }
 
