@@ -161,6 +161,7 @@ PreferencesDialog::PreferencesDialog(ClipboardWatcher *watcher,
     }
     refreshFromWatcher();
     refreshPermission();
+    refreshCliStatus();
 }
 
 void PreferencesDialog::showAboutTab() {
@@ -698,8 +699,11 @@ void PreferencesDialog::installCli() {
         QString errorMessage;
         if (ensureCliAlias(source, &errorMessage)) {
             m_cliStatus->setText(QStringLiteral("CLI installed. Ensure ~/.local/bin is on PATH."));
+            m_cliStatus->setStyleSheet(QStringLiteral("color: palette(windowText);"));
+            refreshCliStatus();
         } else {
             m_cliStatus->setText(errorMessage);
+            m_cliStatus->setStyleSheet(QStringLiteral("color: palette(windowText);"));
         }
         return;
     }
@@ -742,6 +746,7 @@ void PreferencesDialog::installCli() {
     m_cliProcess = new QProcess(this);
     m_cliProcess->setProgram(pkexec);
     m_cliProcess->setArguments(QStringList{managerPath} + managerArgs);
+    m_cliProcess->setProcessChannelMode(QProcess::MergedChannels);
     QProcessEnvironment env = QProcessEnvironment::systemEnvironment();
     if (manager == QStringLiteral("apt-get")) {
         env.insert(QStringLiteral("DEBIAN_FRONTEND"), QStringLiteral("noninteractive"));
@@ -751,23 +756,41 @@ void PreferencesDialog::installCli() {
 
     m_installCliButton->setEnabled(false);
     m_cliStatus->setText(QStringLiteral("Installing trimmeh-cli..."));
+    m_cliStatus->setStyleSheet(QStringLiteral("color: palette(windowText);"));
 
     const QString managerName = QFileInfo(managerPath).baseName();
     connect(m_cliProcess, &QProcess::finished, this, [this, managerName](int exitCode, QProcess::ExitStatus exitStatus) {
         m_installCliButton->setEnabled(true);
         if (exitStatus != QProcess::NormalExit || exitCode != 0) {
-            m_cliStatus->setText(QStringLiteral("CLI install failed via %1.").arg(managerName));
+            QString output = QString::fromUtf8(m_cliProcess ? m_cliProcess->readAll() : QByteArray()).trimmed();
+            QString lastLine;
+            if (!output.isEmpty()) {
+                const QStringList lines = output.split(QLatin1Char('\n'), Qt::SkipEmptyParts);
+                if (!lines.isEmpty()) {
+                    lastLine = lines.constLast().trimmed();
+                }
+            }
+            if (!lastLine.isEmpty()) {
+                m_cliStatus->setText(QStringLiteral("CLI install failed via %1: %2").arg(managerName, lastLine));
+            } else {
+                m_cliStatus->setText(QStringLiteral("CLI install failed via %1.").arg(managerName));
+            }
+            m_cliStatus->setStyleSheet(QStringLiteral("color: palette(windowText);"));
         } else {
             const QString resolved = QStandardPaths::findExecutable(QStringLiteral("trimmeh-cli"));
             if (resolved.isEmpty()) {
                 m_cliStatus->setText(QStringLiteral("Installed via %1, but trimmeh-cli is still not on PATH. Log out and try again.")
                                         .arg(managerName));
+                m_cliStatus->setStyleSheet(QStringLiteral("color: palette(windowText);"));
             } else {
                 QString errorMessage;
                 if (ensureCliAlias(resolved, &errorMessage)) {
                     m_cliStatus->setText(QStringLiteral("CLI installed. Ensure ~/.local/bin is on PATH."));
+                    m_cliStatus->setStyleSheet(QStringLiteral("color: palette(windowText);"));
+                    refreshCliStatus();
                 } else {
                     m_cliStatus->setText(errorMessage);
+                    m_cliStatus->setStyleSheet(QStringLiteral("color: palette(windowText);"));
                 }
             }
         }
@@ -780,6 +803,7 @@ void PreferencesDialog::installCli() {
     connect(m_cliProcess, &QProcess::errorOccurred, this, [this](QProcess::ProcessError) {
         m_installCliButton->setEnabled(true);
         m_cliStatus->setText(QStringLiteral("CLI install failed to start."));
+        m_cliStatus->setStyleSheet(QStringLiteral("color: palette(windowText);"));
         if (m_cliProcess) {
             m_cliProcess->deleteLater();
             m_cliProcess = nullptr;
@@ -787,6 +811,24 @@ void PreferencesDialog::installCli() {
     });
 
     m_cliProcess->start();
+}
+
+void PreferencesDialog::refreshCliStatus() {
+    if (!m_installCliButton || !m_cliStatus) {
+        return;
+    }
+
+    const QString source = QStandardPaths::findExecutable(QStringLiteral("trimmeh-cli"));
+    if (source.isEmpty()) {
+        m_installCliButton->setEnabled(true);
+        m_cliStatus->setText(QStringLiteral("trimmeh-cli not installed yet."));
+        m_cliStatus->setStyleSheet(QStringLiteral("color: palette(mid);"));
+        return;
+    }
+
+    m_installCliButton->setEnabled(false);
+    m_cliStatus->setText(QStringLiteral("CLI installed."));
+    m_cliStatus->setStyleSheet(QStringLiteral("color: palette(windowText);"));
 }
 
 QString PreferencesDialog::sampleForAggressiveness(const QString &level) const {

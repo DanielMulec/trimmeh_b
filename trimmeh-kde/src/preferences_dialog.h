@@ -37,6 +37,7 @@ private:
     void buildShortcutsTab(QTabWidget *tabs);
     void buildAboutTab(QTabWidget *tabs);
     void refreshPermission();
+    void refreshCliStatus();
     void installCli();
 
     QString sampleForAggressiveness(const QString &level) const;
