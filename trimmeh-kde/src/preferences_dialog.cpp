@@ -7,6 +7,7 @@
 #include <QCheckBox>
 #include <QDesktopServices>
 #include <QDialogButtonBox>
+#include <QDir>
 #include <QFile>
 #include <QFileDevice>
 #include <QFileInfo>
