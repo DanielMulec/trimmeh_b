@@ -99,27 +99,18 @@ Settings persistence
 - ./build-kde/trimmeh-kde-probe --once
 - ./build-kde/trimmeh-kde-probe (confirm clipboardHistoryUpdated fires on new copies)
 
-3) Core vectors (parity, manual spot-check)
+3) Core vectors (parity)
 - Use tests/trim-vectors.json as the source of truth.
-- For now, manually spot-check these vectors by copying input and confirming output:
+- Run the KDE vector harness:
 
-Backslash merge (expected: single line)
-```
-python - <<'PY'
-print("ok")\
-
-PY
+```sh
+./build-kde/trimmeh-kde-vectors
 ```
 
-Prompt strip
-```
-$ sudo dnf install foo
-```
+- Optional paths:
 
-Box gutter
-```
-│ sudo dnf upgrade && \
-│ reboot
+```sh
+./build-kde/trimmeh-kde-vectors --vectors ../tests/trim-vectors.json --core ./build-kde/trimmeh-core.js
 ```
 
 4) Clipboard watcher scenarios

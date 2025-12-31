@@ -159,7 +159,7 @@ Status: **Done** (swap/restore + portal injection + permission UX)
 - Parity test checklist and manual test plan.
 - Vector tests for the JS core.
 - Autostart and config persistence.
-Status: **Autostart + persistence done**; **QA checklist + integration plan documented; vectors still pending**
+Status: **Autostart + persistence done**; **QA checklist + integration plan documented; KDE vector harness available**
 
 ---
 

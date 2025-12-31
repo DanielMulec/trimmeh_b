@@ -38,6 +38,21 @@ add_executable(trimmeh-kde-probe
 
 target_link_libraries(trimmeh-kde-probe PRIVATE Qt6::Core Qt6::DBus)
 
+add_executable(trimmeh-kde-vectors
+    src/vectors_runner.cpp
+    src/trim_core.cpp
+    src/trim_core.h
+)
+
+add_dependencies(trimmeh-kde-vectors trimmeh_core_bundle)
+
+target_link_libraries(trimmeh-kde-vectors PRIVATE Qt6::Core Qt6::Qml)
+
+add_custom_command(TARGET trimmeh-kde-vectors POST_BUILD
+    COMMAND "${CMAKE_COMMAND}" -E copy_if_different "${CORE_JS}" $<TARGET_FILE_DIR:trimmeh-kde-vectors>/trimmeh-core.js
+    COMMENT "Copying trimmeh-core.js next to trimmeh-kde-vectors"
+)
+
 add_executable(trimmeh-kde
     src/app_main.cpp
     src/app_identity.cpp
