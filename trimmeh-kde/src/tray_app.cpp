@@ -11,6 +11,7 @@
 #include <QKeySequence>
 #include <QLabel>
 #include <QMenu>
+#include <QPalette>
 #include <QVector>
 #include <QWidget>
 #include <QWidgetAction>
@@ -155,7 +156,13 @@ QWidgetAction *makePreviewAction(QMenu *menu, QLabel **labelOut) {
     label->setTextInteractionFlags(Qt::NoTextInteraction);
     label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    label->setStyleSheet(QStringLiteral("color: palette(mid);"));
+    label->setForegroundRole(QPalette::Text);
+    if (menu) {
+        const QColor color = menu->palette().color(QPalette::Text);
+        label->setStyleSheet(QStringLiteral("color: %1;").arg(color.name()));
+    } else {
+        label->setStyleSheet(QStringLiteral("color: palette(text);"));
+    }
     QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     if (font.pointSizeF() > 0) {
         font.setPointSizeF(font.pointSizeF() - 1);

@@ -30,7 +30,7 @@ kubectl get pods \
   | jq '.items[].metadata.name'
 EOF
 ```
-
+sti
 - Copy a single-line command; verify no change and no loop.
 
 ```sh
