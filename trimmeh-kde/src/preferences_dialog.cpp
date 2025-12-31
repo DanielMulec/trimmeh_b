@@ -405,10 +405,10 @@ void PreferencesDialog::buildAboutTab(QTabWidget *tabs) {
         return btn;
     };
 
-    linksLayout->addWidget(linkButton(QStringLiteral("GitHub"), QStringLiteral("https://github.com/steipete/Trimmy")));
-    linksLayout->addWidget(linkButton(QStringLiteral("Website"), QStringLiteral("https://steipete.me")));
-    linksLayout->addWidget(linkButton(QStringLiteral("Twitter"), QStringLiteral("https://twitter.com/steipete")));
-    linksLayout->addWidget(linkButton(QStringLiteral("Email"), QStringLiteral("mailto:peter@steipete.me")));
+    linksLayout->addWidget(linkButton(QStringLiteral("GitHub"), QStringLiteral("https://github.com/DanielMulec/trimmeh_b")));
+    linksLayout->addWidget(linkButton(QStringLiteral("Website"), QStringLiteral("https://www.danielmulec.com")));
+    linksLayout->addWidget(linkButton(QStringLiteral("X.com"), QStringLiteral("https://x.com/danielmulec")));
+    linksLayout->addWidget(linkButton(QStringLiteral("Email"), QStringLiteral("mailto:dmulec@gmail.com")));
 
     auto *updates = new QGroupBox(QStringLiteral("Updates"), panel);
     auto *updatesLayout = new QVBoxLayout(updates);
