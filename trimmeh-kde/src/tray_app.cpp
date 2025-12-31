@@ -155,6 +155,7 @@ QWidgetAction *makePreviewAction(QMenu *menu, QLabel **labelOut) {
     label->setTextInteractionFlags(Qt::NoTextInteraction);
     label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
     label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
+    label->setStyleSheet(QStringLiteral("color: palette(mid);"));
     QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
     if (font.pointSizeF() > 0) {
         font.setPointSizeF(font.pointSizeF() - 1);
@@ -162,10 +163,8 @@ QWidgetAction *makePreviewAction(QMenu *menu, QLabel **labelOut) {
     label->setFont(font);
     label->setMinimumWidth(kMenuPreviewWidth);
     label->setMaximumWidth(kMenuPreviewWidth);
-    label->setEnabled(false);
 
     layout->addWidget(label);
-    container->setEnabled(false);
 
     auto *action = new QWidgetAction(menu);
     action->setDefaultWidget(container);
