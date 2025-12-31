@@ -543,12 +543,14 @@ QString ClipboardWatcher::fallbackClipboardText() const {
         return QString();
     }
 
-    QString plain = clipboard->text(QStringLiteral("plain"), QClipboard::Clipboard);
+    QString plainSubtype = QStringLiteral("plain");
+    QString plain = clipboard->text(plainSubtype, QClipboard::Clipboard);
     if (!plain.isEmpty()) {
         return plain;
     }
 
-    QString html = clipboard->text(QStringLiteral("html"), QClipboard::Clipboard);
+    QString htmlSubtype = QStringLiteral("html");
+    QString html = clipboard->text(htmlSubtype, QClipboard::Clipboard);
     if (!html.isEmpty()) {
         QTextDocument doc;
         doc.setHtml(html);
