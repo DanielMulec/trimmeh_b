@@ -2,17 +2,66 @@
 
 Target: Plasma 6.5.4 (Wayland). Baseline: Plasma >= 6.4.
 
-## Manual checklist (quick regression)
+## Test helpers
+
+Use the Klipper probe to set clipboard content (Wayland-safe):
+
+```sh
+./build-kde/trimmeh-kde-probe --set-stdin <<'EOF'
+your text here
+EOF
+```
+
+For single-line text:
+
+```sh
+./build-kde/trimmeh-kde-probe --set "echo hello"
+```
+
+## Manual checklist (quick regression + snippets)
 
 Clipboard auto-trim
 - Copy a multi-line shell snippet with pipes/backslashes; verify it auto-trims once.
+
+```sh
+./build-kde/trimmeh-kde-probe --set-stdin <<'EOF'
+kubectl get pods \
+  -n kube-system \
+  | jq '.items[].metadata.name'
+EOF
+```
+
 - Copy a single-line command; verify no change and no loop.
+
+```sh
+./build-kde/trimmeh-kde-probe --set "echo hi"
+```
+
 - Copy > max-lines (11+ lines); verify no auto-trim.
+
+```sh
+seq 1 11 | sed 's/^/line /' | ./build-kde/trimmeh-kde-probe --set-stdin
+```
+
 - Toggle Auto-trim off; verify clipboard remains unchanged on new copies.
 
 Prompt/box handling
 - Copy a prompt-prefixed snippet ("$ sudo dnf install foo") and confirm prompt stripping when enabled.
+
+```sh
+./build-kde/trimmeh-kde-probe --set-stdin <<'EOF'
+$ sudo dnf install foo
+EOF
+```
+
 - Copy a box-gutter snippet (leading box drawing chars like "│" or "┃") and confirm removal when enabled.
+
+```sh
+./build-kde/trimmeh-kde-probe --set-stdin <<'EOF'
+│ sudo dnf upgrade && \
+│ reboot
+EOF
+```
 
 Manual paste
 - "Paste Trimmed" uses High aggressiveness, swaps clipboard, and restores.
@@ -27,13 +76,17 @@ Portal permission flow
 Tray/UI
 - Preview rows show trimmed preview and original strike-through (when available).
 - Visible whitespace markers (LF => "⏎", Tab => "⇥") appear in previews.
+
+```sh
+printf 'echo\tone\nand two\n' | ./build-kde/trimmeh-kde-probe --set-stdin
+```
+
 - Shortcut hints appear in the menu when hotkeys are enabled.
 - About/Update rows present (Update row hidden unless wired).
 
 Settings persistence
 - Change toggles + delays + hotkeys; restart app and confirm settings persist.
 - Start at login toggles autostart desktop entry.
-
 
 ## Integration test plan (minimal)
 
@@ -45,18 +98,39 @@ Settings persistence
 - ./build-kde/trimmeh-kde-probe --once
 - ./build-kde/trimmeh-kde-probe (confirm clipboardHistoryUpdated fires on new copies)
 
-3) Core vectors (parity)
+3) Core vectors (parity, manual spot-check)
 - Use tests/trim-vectors.json as the source of truth.
-- Build trimmeh-core-js for KDE and run a small harness that:
-  - Loads the KDE bundle into QJSEngine
-  - Iterates vectors and compares expected output
-  - Fails on mismatch
+- For now, manually spot-check these vectors by copying input and confirming output:
+
+Backslash merge (expected: single line)
+```
+python - <<'PY'
+print("ok")\
+
+PY
+```
+
+Prompt strip
+```
+$ sudo dnf install foo
+```
+
+Box gutter
+```
+│ sudo dnf upgrade && \
+│ reboot
+```
 
 4) Clipboard watcher scenarios
 - Burst changes: copy text A then B quickly; ensure only B is written back.
+
+```sh
+./build-kde/trimmeh-kde-probe --set "echo one"
+./build-kde/trimmeh-kde-probe --set "echo two"
+```
+
 - Self-write guard: after auto-trim, confirm no repeat loop.
 - Disable flow: exit app while debounce timer is pending; confirm no crash.
-
 
 ## Notes
 - If portal paste injection fails, the expected behavior is a passive hint (manual paste) plus clipboard restore.
