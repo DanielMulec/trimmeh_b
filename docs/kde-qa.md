@@ -74,8 +74,9 @@ Portal permission flow
 - Pre-authorize (flatpak permission-set ... yes); restart app and ensure portal prompt is skipped.
 
 Tray/UI
-- Preview rows show trimmed preview and original strike-through (when available).
+- Preview rows show trimmed + original previews (plain text).
 - Visible whitespace markers (LF => "⏎", Tab => "⇥") appear in previews.
+- “Removed: N chars” line appears when trimmed output is shorter.
 
 ```sh
 printf 'echo\tone\nand two\n' | ./build-kde/trimmeh-kde-probe --set-stdin

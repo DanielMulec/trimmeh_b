@@ -21,7 +21,7 @@ Implemented and verified on **Plasma 6.5.4**:
   - Last preview line
   - Settings…
   - Quit
-- **Tray previews**: trimmed preview line + strike‑through original preview with visible whitespace markers.
+- **Tray previews**: trimmed preview line + original preview line (plain text) with visible whitespace markers, plus a “Removed: N chars” line when applicable.
 - **Tray stats**: paste actions append live character counts and trimmed counts (e.g. `· 1.2k chars · 340 trimmed`).
 - **Tray shortcut hints**: menu shows configured shortcut hints when hotkeys are enabled.
 - **Preferences window (Qt Widgets)**:
@@ -188,6 +188,7 @@ Layout order:
 3. **Paste Original to {Front App}** button
    - Shows keyboard shortcut if enabled.
    - Preview line uses strike‑through on characters removed by trimming.
+   - KDE note: strike‑through isn’t possible in the Plasma tray menu; we show a plain‑text preview plus “Removed: N chars”.
 4. Divider
 5. **Auto‑Trim** toggle
 6. **Settings…**
@@ -199,7 +200,7 @@ Preview details:
 - `lastSummary` uses `ellipsize(..., limit: 90)` after a trim or manual action.
 - Trimmed preview uses `PreviewMetrics.displayString` (maps `\n` → `⏎`, `\t` → `⇥`).
 - Strike‑through preview uses visible whitespace mapping (space → `·`, tab → `⇥`, newline → `⏎`).
-  - KDE current: trimmed preview + strike‑through original preview, with visible whitespace markers; middle ellipsize at 100 chars.
+  - KDE current: trimmed + original preview lines (plain text) with visible whitespace markers; middle ellipsize at 100 chars; optional “Removed: N chars” line.
 
 ### B. Defaults (Trimmy AppSettings)
 - Aggressiveness: **Normal**

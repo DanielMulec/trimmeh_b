@@ -6,41 +6,16 @@
 #include <KStatusNotifierItem>
 #include <QAction>
 #include <QApplication>
-#include <QFontDatabase>
-#include <QHBoxLayout>
 #include <QKeySequence>
-#include <QLabel>
 #include <QMenu>
-#include <QPalette>
-#include <QVector>
-#include <QWidget>
-#include <QWidgetAction>
 
 namespace {
 constexpr int kMenuPreviewLimit = 100;
-constexpr int kMenuPreviewWidth = 260;
 
 QString displayString(const QString &text) {
     QString out = text;
     out.replace('\n', QStringLiteral("\u23CE "));
     out.replace('\t', QStringLiteral("\u21E5 "));
-    return out;
-}
-
-QString displayStringWithVisibleWhitespace(const QString &text) {
-    QString out;
-    out.reserve(text.size());
-    for (const QChar ch : text) {
-        if (ch == QLatin1Char(' ')) {
-            out.append(QChar(0x00B7));
-        } else if (ch == QLatin1Char('\t')) {
-            out.append(QChar(0x21E5));
-        } else if (ch == QLatin1Char('\n')) {
-            out.append(QChar(0x23CE));
-        } else {
-            out.append(ch);
-        }
-    }
     return out;
 }
 
@@ -54,132 +29,6 @@ QString ellipsizeMiddle(const QString &text, int limit) {
     return text.left(head) + QStringLiteral("...") + text.right(tail);
 }
 
-struct StruckPreview {
-    QString text;
-    QVector<char> removed;
-};
-
-StruckPreview makeStruckPreview(const QString &original, const QString &trimmed) {
-    StruckPreview result;
-    const int oCount = original.size();
-    const int tCount = trimmed.size();
-    QVector<char> removed(oCount, 0);
-    int i = 0;
-    int j = 0;
-    while (i < oCount && j < tCount) {
-        if (original.at(i) == trimmed.at(j)) {
-            i += 1;
-            j += 1;
-        } else {
-            removed[i] = 1;
-            i += 1;
-        }
-    }
-    while (i < oCount) {
-        removed[i] = 1;
-        i += 1;
-    }
-
-    QString mapped;
-    mapped.reserve(oCount);
-    QVector<char> mappedRemoved;
-    mappedRemoved.reserve(oCount);
-    for (int idx = 0; idx < oCount; ++idx) {
-        const QChar ch = original.at(idx);
-        if (ch == QLatin1Char(' ')) {
-            mapped.append(QChar(0x00B7));
-        } else if (ch == QLatin1Char('\t')) {
-            mapped.append(QChar(0x21E5));
-        } else if (ch == QLatin1Char('\n')) {
-            mapped.append(QChar(0x23CE));
-        } else {
-            mapped.append(ch);
-        }
-        mappedRemoved.append(removed[idx]);
-    }
-
-    result.text = mapped;
-    result.removed = mappedRemoved;
-    return result;
-}
-
-StruckPreview ellipsizeStruck(const StruckPreview &preview, int limit) {
-    if (limit < 4 || preview.text.size() <= limit) {
-        return preview;
-    }
-    const int keep = limit - 3;
-    const int head = keep / 2;
-    const int tail = keep - head;
-    StruckPreview out;
-    out.text = preview.text.left(head) + QStringLiteral("...") + preview.text.right(tail);
-    out.removed = preview.removed.mid(0, head);
-    out.removed.reserve(out.text.size());
-    out.removed.append(0);
-    out.removed.append(0);
-    out.removed.append(0);
-    out.removed.append(preview.removed.mid(preview.removed.size() - tail, tail));
-    return out;
-}
-
-QString toStrikeHtml(const StruckPreview &preview) {
-    QString html;
-    html.reserve(preview.text.size() * 8);
-    html.append(QStringLiteral("<span style=\"white-space: pre-wrap;\">"));
-    const int count = preview.text.size();
-    for (int idx = 0; idx < count; ++idx) {
-        const QString chunk = QString(preview.text.at(idx)).toHtmlEscaped();
-        if (idx < preview.removed.size() && preview.removed[idx]) {
-            html.append(QStringLiteral("<span style=\"text-decoration:line-through;\">"));
-            html.append(chunk);
-            html.append(QStringLiteral("</span>"));
-        } else {
-            html.append(chunk);
-        }
-    }
-    html.append(QStringLiteral("</span>"));
-    return html;
-}
-
-QString toPreviewHtml(const QString &text) {
-    const QString escaped = text.toHtmlEscaped();
-    return QStringLiteral("<span style=\"white-space: pre-wrap;\">%1</span>").arg(escaped);
-}
-
-QWidgetAction *makePreviewAction(QMenu *menu, QLabel **labelOut) {
-    auto *container = new QWidget(menu);
-    auto *layout = new QHBoxLayout(container);
-    layout->setContentsMargins(24, 0, 12, 0);
-
-    auto *label = new QLabel(container);
-    label->setWordWrap(true);
-    label->setTextFormat(Qt::RichText);
-    label->setTextInteractionFlags(Qt::NoTextInteraction);
-    label->setAlignment(Qt::AlignLeft | Qt::AlignTop);
-    label->setSizePolicy(QSizePolicy::Preferred, QSizePolicy::Minimum);
-    label->setForegroundRole(QPalette::Text);
-    if (menu) {
-        const QColor color = menu->palette().color(QPalette::Text);
-        label->setStyleSheet(QStringLiteral("color: %1;").arg(color.name()));
-    } else {
-        label->setStyleSheet(QStringLiteral("color: palette(text);"));
-    }
-    QFont font = QFontDatabase::systemFont(QFontDatabase::FixedFont);
-    if (font.pointSizeF() > 0) {
-        font.setPointSizeF(font.pointSizeF() - 1);
-    }
-    label->setFont(font);
-    label->setMinimumWidth(kMenuPreviewWidth);
-    label->setMaximumWidth(kMenuPreviewWidth);
-
-    layout->addWidget(label);
-
-    auto *action = new QWidgetAction(menu);
-    action->setDefaultWidget(container);
-    if (labelOut) {
-        *labelOut = label;
-    }
-    return action;
-}
 
 int truncationCount(int count, int limit) {
     if (count <= limit || limit <= 0) {
@@ -249,8 +98,8 @@ TrayApp::TrayApp(ClipboardWatcher *watcher,
         }
         updateState();
     });
-    m_trimmedPreviewAction = makePreviewAction(m_menu, &m_trimmedPreviewLabel);
-    m_menu->addAction(m_trimmedPreviewAction);
+    m_trimmedPreview = m_menu->addAction(QString());
+    m_trimmedPreview->setEnabled(false);
 
     m_pasteOriginal = m_menu->addAction(QStringLiteral("Paste Original"));
     connect(m_pasteOriginal, &QAction::triggered, this, [this]() {
@@ -259,8 +108,11 @@ TrayApp::TrayApp(ClipboardWatcher *watcher,
         }
         updateState();
     });
-    m_originalPreviewAction = makePreviewAction(m_menu, &m_originalPreviewLabel);
-    m_menu->addAction(m_originalPreviewAction);
+    m_originalPreview = m_menu->addAction(QString());
+    m_originalPreview->setEnabled(false);
+    m_removedPreview = m_menu->addAction(QString());
+    m_removedPreview->setEnabled(false);
+    m_removedPreview->setVisible(false);
 
     m_restoreLast = m_menu->addAction(QStringLiteral("Restore last copy"));
     connect(m_restoreLast, &QAction::triggered, this, [this]() {
@@ -398,27 +250,33 @@ void TrayApp::updatePreviews() {
     const QString trimmed = m_watcher->lastTrimmed();
     const QString original = m_watcher->lastOriginal();
 
-    if (m_trimmedPreviewLabel) {
+    if (m_trimmedPreview) {
         const QString source = !trimmed.isEmpty() ? trimmed : summary;
         const QString text = source.isEmpty()
-            ? QStringLiteral("No trimmed text yet")
-            : ellipsizeMiddle(displayString(source), kMenuPreviewLimit);
-        m_trimmedPreviewLabel->setText(toPreviewHtml(text));
+            ? QStringLiteral("Preview: No trimmed text yet")
+            : QStringLiteral("Preview: %1").arg(ellipsizeMiddle(displayString(source), kMenuPreviewLimit));
+        m_trimmedPreview->setText(text);
     }
 
-    if (m_originalPreviewLabel) {
-        QString html;
+    if (m_originalPreview) {
+        QString text;
         if (!original.isEmpty()) {
-            const QString trimmedSource = !trimmed.isEmpty() ? trimmed : original;
-            StruckPreview preview = makeStruckPreview(original, trimmedSource);
-            preview = ellipsizeStruck(preview, kMenuPreviewLimit);
-            html = toStrikeHtml(preview);
+            text = QStringLiteral("Original: %1").arg(ellipsizeMiddle(displayString(original), kMenuPreviewLimit));
         } else if (!summary.isEmpty()) {
-            html = toPreviewHtml(ellipsizeMiddle(displayString(summary), kMenuPreviewLimit));
+            text = QStringLiteral("Original: %1").arg(ellipsizeMiddle(displayString(summary), kMenuPreviewLimit));
         } else {
-            html = toPreviewHtml(QStringLiteral("No actions yet"));
+            text = QStringLiteral("Original: No actions yet");
         }
-        m_originalPreviewLabel->setText(html);
+        m_originalPreview->setText(text);
+    }
+
+    if (m_removedPreview) {
+        if (!original.isEmpty() && !trimmed.isEmpty() && original.size() > trimmed.size()) {
+            m_removedPreview->setText(QStringLiteral("Removed: %1 chars").arg(original.size() - trimmed.size()));
+            m_removedPreview->setVisible(true);
+        } else {
+            m_removedPreview->setVisible(false);
+        }
     }
 }
 
