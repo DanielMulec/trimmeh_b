@@ -15,6 +15,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QGuiApplication>
+#include <QLibraryInfo>
 #include <QStandardPaths>
 #include <QSettings>
 
@@ -26,9 +27,9 @@ QString coreBundlePath() {
         return local;
     }
 
-    const QStringList libDirs = QStandardPaths::standardLocations(QStandardPaths::LibraryLocation);
-    for (const QString &dir : libDirs) {
-        const QString candidate = QDir(dir).filePath(QStringLiteral("trimmeh/trimmeh-core.js"));
+    const QString libDir = QLibraryInfo::path(QLibraryInfo::LibrariesPath);
+    if (!libDir.isEmpty()) {
+        const QString candidate = QDir(libDir).filePath(QStringLiteral("trimmeh/trimmeh-core.js"));
         if (QFileInfo::exists(candidate)) {
             return candidate;
         }
