@@ -1,0 +1,21 @@
+Source: trimmeh-kde
+Section: utils
+Priority: optional
+Maintainer: Daniel Mulec <dmulec@gmail.com>
+Build-Depends: debhelper-compat (= 13), cmake, pkg-config, qt6-base-dev, qt6-declarative-dev, libkf6statusnotifieritem-dev, libkf6globalaccel-dev, esbuild, rustc, cargo
+Standards-Version: 4.6.2
+Homepage: https://www.danielmulec.com
+Rules-Requires-Root: no
+
+Package: trimmeh-kde
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}, plasma-workspace, xdg-desktop-portal, xdg-desktop-portal-kde
+Recommends: trimmeh-cli
+Description: Clipboard auto-trimmer tray app for KDE Plasma
+ Trimmeh KDE trims multi-line shell snippets on the clipboard into single-line commands.
+
+Package: trimmeh-cli
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: Command-line interface for Trimmeh
+ Trimmeh CLI provides trim and diff commands for shell snippets.
