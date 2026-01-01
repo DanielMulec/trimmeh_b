@@ -5,7 +5,7 @@ pkgrel=1
 arch=('x86_64')
 url='https://www.danielmulec.com'
 license=('MIT')
-makedepends=('cmake' 'ninja' 'esbuild' 'rust' 'cargo')
+makedepends=('cmake' 'ninja' 'esbuild' 'rust' 'cargo' 'qt6-base' 'qt6-declarative' 'kstatusnotifieritem' 'kglobalaccel')
 source=("trimmeh_b-${pkgver}.tar.gz::https://github.com/DanielMulec/trimmeh_b/archive/refs/tags/v${pkgver}.tar.gz")
 sha256sums=('SKIP')
 
@@ -17,7 +17,7 @@ build() {
 
 package_trimmeh-kde() {
   pkgdesc='Clipboard auto-trimmer tray app for KDE Plasma'
-  depends=('qt6-base' 'qt6-declarative' 'kstatusnotifieritem' 'kglobalaccel')
+  depends=('qt6-base' 'qt6-declarative' 'kstatusnotifieritem' 'kglobalaccel' 'plasma-workspace' 'xdg-desktop-portal' 'xdg-desktop-portal-kde')
   optdepends=('trimmeh-cli: command-line trimming tool')
 
   DESTDIR="${pkgdir}" cmake --install build-kde

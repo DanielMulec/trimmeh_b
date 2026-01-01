@@ -1,4 +1,4 @@
 usr/bin/trimmeh-kde
-usr/lib/trimmeh/trimmeh-core.js
+usr/lib/*/trimmeh/trimmeh-core.js
 usr/share/applications/dev.trimmeh.TrimmehKDE.desktop
 usr/share/metainfo/dev.trimmeh.TrimmehKDE.metainfo.xml

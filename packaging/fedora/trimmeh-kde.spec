@@ -13,7 +13,7 @@ BuildRequires:  qt6-qtbase-devel
 BuildRequires:  qt6-qtdeclarative-devel
 BuildRequires:  kf6-kstatusnotifieritem-devel
 BuildRequires:  kf6-kglobalaccel-devel
-BuildRequires:  esbuild
+BuildRequires:  golang-github-evanw-esbuild
 BuildRequires:  cargo
 BuildRequires:  rust
 BuildRequires:  appstream-util
@@ -22,6 +22,9 @@ Requires:       qt6-qtbase
 Requires:       qt6-qtdeclarative
 Requires:       kf6-kstatusnotifieritem
 Requires:       kf6-kglobalaccel
+Requires:       plasma-workspace
+Requires:       xdg-desktop-portal
+Requires:       xdg-desktop-portal-kde
 Recommends:     trimmeh-cli
 
 %description

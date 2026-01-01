@@ -9,7 +9,7 @@ Rules-Requires-Root: no
 
 Package: trimmeh-kde
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: ${shlibs:Depends}, ${misc:Depends}, plasma-workspace, xdg-desktop-portal, xdg-desktop-portal-kde
 Recommends: trimmeh-cli
 Description: Clipboard auto-trimmer tray app for KDE Plasma
  Trimmeh KDE trims multi-line shell snippets on the clipboard into single-line commands.
