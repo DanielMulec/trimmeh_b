@@ -16,7 +16,7 @@ BuildRequires:  kf6-kglobalaccel-devel
 BuildRequires:  golang-github-evanw-esbuild
 BuildRequires:  cargo
 BuildRequires:  rust
-BuildRequires:  appstream-util
+BuildRequires:  libappstream-glib
 
 Requires:       qt6-qtbase
 Requires:       qt6-qtdeclarative
@@ -41,7 +41,7 @@ Trimmeh CLI provides trimming and diff commands for shell snippets.
 %autosetup -n %{name}-%{version}
 
 %build
-cmake -S trimmeh-kde -B build-kde -DCMAKE_BUILD_TYPE=Release
+cmake -S trimmeh-kde -B build-kde -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=%{_prefix}
 cmake --build build-kde
 cargo build -p trimmeh-cli --release
 
