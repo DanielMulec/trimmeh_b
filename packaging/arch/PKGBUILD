@@ -10,6 +10,7 @@ source=("trimmeh_b-${pkgver}.tar.gz::https://github.com/DanielMulec/trimmeh_b/ar
 sha256sums=('SKIP')
 
 build() {
+  cd "${srcdir}/trimmeh_b-${pkgver}"
   cmake -S trimmeh-kde -B build-kde -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
   cmake --build build-kde
   cargo build -p trimmeh-cli --release
@@ -20,6 +21,7 @@ package_trimmeh-kde() {
   depends=('qt6-base' 'qt6-declarative' 'kstatusnotifieritem' 'kglobalaccel' 'plasma-workspace' 'xdg-desktop-portal' 'xdg-desktop-portal-kde')
   optdepends=('trimmeh-cli: command-line trimming tool')
 
+  cd "${srcdir}/trimmeh_b-${pkgver}"
   DESTDIR="${pkgdir}" cmake --install build-kde
   install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/trimmeh-kde/LICENSE"
 }
@@ -28,6 +30,7 @@ package_trimmeh-cli() {
   pkgdesc='Command-line interface for Trimmeh'
   depends=()
 
+  cd "${srcdir}/trimmeh_b-${pkgver}"
   install -Dm755 target/release/trimmeh-cli "${pkgdir}/usr/bin/trimmeh-cli"
   install -Dm644 LICENSE "${pkgdir}/usr/share/licenses/trimmeh-cli/LICENSE"
 }
