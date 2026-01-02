@@ -25,6 +25,7 @@ Trimmeh is the South-Parkian cousin of [Trimmy](https://github.com/steipete/Trim
   - `cmake -S trimmeh-kde -B build-kde -DCMAKE_BUILD_TYPE=Release`
   - `cmake --build build-kde`
   - `./build-kde/trimmeh-kde`
+- Packaging status and clean-build results: see `docs/kde-packaging-results.md`.
 - Optional portal pre-authorization (avoids repeated permission prompts):
   - `flatpak permission-set kde-authorized remote-desktop dev.trimmeh.TrimmehKDE yes`
 
