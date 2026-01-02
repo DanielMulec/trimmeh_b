@@ -1,0 +1,12 @@
+Package: trimmeh-kde-dbgsym
+Source: trimmeh-kde
+Version: 0.1.0-1
+Auto-Built-Package: debug-symbols
+Architecture: amd64
+Maintainer: Daniel Mulec <dmulec@gmail.com>
+Installed-Size: 2249
+Depends: trimmeh-kde (= 0.1.0-1)
+Section: debug
+Priority: optional
+Description: debug symbols for trimmeh-kde
+Build-Ids: 4836c2bd6c25b5061ebbd3be51df3f854392d7d6

@@ -6,7 +6,7 @@ export DH_VERBOSE = 1
 	dh $@ --buildsystem=cmake --builddirectory=build-kde
 
 override_dh_auto_configure:
-	dh_auto_configure -- -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
+	cmake -S trimmeh-kde -B build-kde -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr
 
 override_dh_auto_build:
 	dh_auto_build

@@ -1,0 +1,21 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>dev.trimmeh.TrimmehKDE</id>
+  <name>Trimmeh</name>
+  <summary>Clipboard auto-trim for terminal snippets</summary>
+  <metadata_license>CC0-1.0</metadata_license>
+  <project_license>MIT</project_license>
+  <developer_name>Daniel Mulec</developer_name>
+  <launchable type="desktop-id">dev.trimmeh.TrimmehKDE.desktop</launchable>
+  <icon type="stock">edit-cut</icon>
+  <description>
+    <p>Trimmeh flattens multi-line shell snippets on your clipboard into a single-line command that pastes cleanly in terminals.</p>
+    <p>It runs as a KDE Plasma tray app and can auto-trim or perform one-shot “Paste Trimmed/Original” actions.</p>
+  </description>
+  <url type="homepage">https://www.danielmulec.com</url>
+  <url type="bugtracker">https://github.com/DanielMulec/trimmeh_b/issues</url>
+  <provides>
+    <binary>trimmeh-kde</binary>
+  </provides>
+  <content_rating type="oars-1.1"/>
+</component>

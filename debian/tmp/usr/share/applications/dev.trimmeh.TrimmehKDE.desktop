@@ -1,0 +1,9 @@
+[Desktop Entry]
+Type=Application
+Name=Trimmeh
+Comment=Clipboard auto-trim for terminal snippets
+Exec=trimmeh-kde
+Icon=edit-cut
+Terminal=false
+NoDisplay=true
+Categories=Utility;

@@ -1,0 +1,6 @@
+730d5df0e4c6bbdd97d5fa3c7d32de4e  usr/bin/trimmeh-kde
+c70235d2eff6b23850ac40a4a171c742  usr/lib/x86_64-linux-gnu/trimmeh/trimmeh-core.js
+f14a50299357dc65d508a8500becf40a  usr/share/applications/dev.trimmeh.TrimmehKDE.desktop
+5cbf675bb4d8ceadefee12b3868f2d4a  usr/share/doc/trimmeh-kde/changelog.Debian.gz
+fc28b89024d9fdf7324cca2ac31f0469  usr/share/doc/trimmeh-kde/copyright
+560d1424e14f9716c92b967eafaff373  usr/share/metainfo/dev.trimmeh.TrimmehKDE.metainfo.xml

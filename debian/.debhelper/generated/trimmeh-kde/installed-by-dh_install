@@ -1,0 +1,4 @@
+debian/tmp/usr/bin/trimmeh-kde
+debian/tmp/usr/lib/x86_64-linux-gnu/trimmeh/trimmeh-core.js
+debian/tmp/usr/share/applications/dev.trimmeh.TrimmehKDE.desktop
+debian/tmp/usr/share/metainfo/dev.trimmeh.TrimmehKDE.metainfo.xml

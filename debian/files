@@ -1,0 +1,5 @@
+trimmeh-cli-dbgsym_0.1.0-1_amd64.deb debug optional automatic=yes
+trimmeh-cli_0.1.0-1_amd64.deb utils optional
+trimmeh-kde-dbgsym_0.1.0-1_amd64.deb debug optional automatic=yes
+trimmeh-kde_0.1.0-1_amd64.buildinfo utils optional
+trimmeh-kde_0.1.0-1_amd64.deb utils optional
