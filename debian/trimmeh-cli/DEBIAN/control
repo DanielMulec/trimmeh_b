@@ -3,7 +3,7 @@ Source: trimmeh-kde
 Version: 0.1.0-1
 Architecture: amd64
 Maintainer: Daniel Mulec <dmulec@gmail.com>
-Installed-Size: 3018
+Installed-Size: 2986
 Depends: libc6 (>= 2.34), libgcc-s1 (>= 4.2)
 Section: utils
 Priority: optional
