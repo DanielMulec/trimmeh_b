@@ -1,6 +1,7 @@
 # Trimmeh KDE QA Checklist
 
 Target: Plasma 6.5.4 (Wayland). Baseline: Plasma >= 6.4.
+Status: last full QA pass completed on 2026-01-02 (Fedora 43 KDE Wayland).
 
 ## Test helpers
 

@@ -42,11 +42,13 @@ Implemented and verified on **Plasma 6.5.4**:
 - **Clipboard fallbacks**: optional QClipboard/plain+HTML fallback path when Klipper returns empty.
 
 Not yet implemented:
-- **Frontmost app label** in tray menu (explicitly skipped for KDE).
-- **Real updater plumbing** (menu row exists but is hidden; settings show package‑manager note).
+- **Real updater plumbing** (menu row exists but is hidden; settings show package-manager note).
 
-Temporary deviations:
-- **Paste restore delay** defaults to **1200 ms** (configurable 50–2000 ms). Trimmy parity target is **200 ms**.
+Intentional KDE deviations:
+- **Frontmost app label** in tray menu is intentionally omitted on KDE.
+
+Timing defaults (configurable; not parity gaps):
+- **Paste restore delay** defaults to **1200 ms** (configurable 50–2000 ms).
 - **Paste inject delay** is fixed at **120 ms** (persisted but not exposed in the UI).
 
 ---
@@ -163,9 +165,8 @@ Status: **Autostart + persistence done**; **QA checklist + integration plan docu
 
 ---
 
-## 3.5) Suggested next steps (priority order)
-1. **Parity UI polish**: frontmost app label (if we ever decide to add it on KDE).
-2. **QA pass**: run the manual checklist + integration test plan for KDE.
+## 3.5) Suggested next steps (if/when needed)
+1. **Release hygiene**: rerun packaging builds when preparing a release.
 
 ---
 
@@ -283,7 +284,7 @@ Tab view with fixed size: **410 × 484**.
 
 ### D. Behavioral parity (timing + messaging)
 - **Grace delay**: 80 ms before reading clipboard after change.
-- **Paste restore delay**: configurable 50–2000 ms, default **1200 ms**. Trimmy parity target is **200 ms**.
+- **Paste restore delay**: configurable 50–2000 ms, default **1200 ms**.
 - **Paste inject delay**: **120 ms** before portal paste injection.
 - **Pre‑authorization**: when `kde-authorized` is present, hide permission buttons and auto‑request the session on launch (no prompt).
 - **Permission message on failure**:
